@@ -30,14 +30,45 @@ ausf/
 
 ## NOT IMPLEMENTED FEATURES
 
-- UE Authentication endpoint
-- SoR Protection endpoint
-- UPU Protection endpoint
-- MongoDB integration
+### Core Authentication
+- UE Authentication endpoint (Nausf_UEAuthentication)
+- 5G AKA (Authentication and Key Agreement)
+- EAP-AKA' authentication method
+- KAUSF key derivation
+- Authentication confirmation to UDM
+- Resynchronization handling (SQN mismatch)
+- SUPI/SUCI identity handling
+- Serving Network Name (SNN) verification
+- Home network authentication checks
+- PLMN ID validation
+
+### Service Endpoints
+- SoR Protection endpoint (Nausf_SoRProtection)
+- UPU Protection endpoint (Nausf_UPUProtection)
+
+### Infrastructure
 - HTTP server setup
-- OpenAPI schema validation
-- Authentication token handling
+- HTTP/2 support
+- TLS/mTLS support
+- MongoDB integration
+- NRF integration (service discovery and registration)
+- UDM client (Nudm_UEAuthentication)
+- OAuth2 token validation
+
+### Operational
+- Health check endpoints
+- Metrics/Prometheus integration
 - Logging and monitoring
+- Configuration management
+- Rate limiting
+- Request correlation IDs
+- Graceful shutdown
+
+### Compliance
+- OpenAPI schema validation
+- 3GPP Problem Details format (TS 29.500)
+- API versioning support
+- CORS handling
 
 ## Development
 
