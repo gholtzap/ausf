@@ -1,3 +1,4 @@
+mod clients;
 mod crypto;
 mod handlers;
 mod routes;

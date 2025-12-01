@@ -1,5 +1,5 @@
 use hmac::{Hmac, Mac};
-use sha2::Sha256;
+use sha2::{Sha256, Digest};
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -40,6 +40,13 @@ pub fn derive_kausf(
     s.extend_from_slice(&[0x00, 0x06]);
 
     Ok(kdf(&key, &s))
+}
+
+pub fn compute_hxres_star(rand: &[u8], xres_star: &[u8]) -> Vec<u8> {
+    let mut hasher = Sha256::new();
+    hasher.update(rand);
+    hasher.update(xres_star);
+    hasher.finalize().to_vec()
 }
 
 #[cfg(test)]

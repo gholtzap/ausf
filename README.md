@@ -39,6 +39,9 @@ ausf/
 
 ### Authentication Logic
 - KAUSF key derivation (KDF function)
+- UDM client implementation (Nudm_UEAuthentication_Get service)
+- Authentication vector retrieval from UDM
+- HXRES* computation from XRES*
 
 ## NOT IMPLEMENTED FEATURES
 
@@ -49,9 +52,6 @@ ausf/
 - DELETE /ue-authentications/{authCtxId}/eap-session (delete EAP result)
 
 ### Authentication Logic - 5G AKA Components
-- UDM client implementation (Nudm_UEAuthentication_Get service)
-- Authentication vector retrieval from UDM
-- HXRES* computation from XRES*
 - RES* verification logic
 - Authentication context storage and management
 - Resynchronization handling (SQN mismatch)
