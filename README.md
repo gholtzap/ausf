@@ -33,15 +33,26 @@ ausf/
 - Request tracing middleware
 - CORS support
 
+### Nausf_UEAuthentication Endpoints
+- POST /ue-authentications (authentication initiation)
+- PUT /ue-authentications/{authCtxId}/5g-aka-confirmation (5G AKA confirmation)
+
 ## NOT IMPLEMENTED FEATURES
 
-### Core Authentication
-- UE Authentication endpoint (Nausf_UEAuthentication)
-- 5G AKA (Authentication and Key Agreement)
-- EAP-AKA' authentication method
+### Nausf_UEAuthentication Endpoints
+- POST /ue-authentications/{authCtxId}/eap-session (EAP session handling)
+- POST /ue-authentications/deregister (deregistration)
+- DELETE /ue-authentications/{authCtxId}/5g-aka-confirmation (delete 5G AKA result)
+- DELETE /ue-authentications/{authCtxId}/eap-session (delete EAP result)
+
+### Authentication Logic
+- 5G AKA (Authentication and Key Agreement) implementation
+- EAP-AKA' authentication method implementation
 - KAUSF key derivation
-- Authentication confirmation to UDM
+- Authentication vector validation
 - Resynchronization handling (SQN mismatch)
+
+### Identity and Security
 - SUPI/SUCI identity handling
 - Serving Network Name (SNN) verification
 - Home network authentication checks
