@@ -37,6 +37,9 @@ ausf/
 - POST /ue-authentications (authentication initiation)
 - PUT /ue-authentications/{authCtxId}/5g-aka-confirmation (5G AKA confirmation)
 
+### Authentication Logic
+- KAUSF key derivation (KDF function)
+
 ## NOT IMPLEMENTED FEATURES
 
 ### Nausf_UEAuthentication Endpoints
@@ -45,12 +48,17 @@ ausf/
 - DELETE /ue-authentications/{authCtxId}/5g-aka-confirmation (delete 5G AKA result)
 - DELETE /ue-authentications/{authCtxId}/eap-session (delete EAP result)
 
-### Authentication Logic
-- 5G AKA (Authentication and Key Agreement) implementation
-- EAP-AKA' authentication method implementation
-- KAUSF key derivation
-- Authentication vector validation
+### Authentication Logic - 5G AKA Components
+- UDM client implementation (Nudm_UEAuthentication_Get service)
+- Authentication vector retrieval from UDM
+- HXRES* computation from XRES*
+- RES* verification logic
+- Authentication context storage and management
 - Resynchronization handling (SQN mismatch)
+
+### Authentication Logic - Other
+- EAP-AKA' authentication method implementation
+- Authentication vector validation
 
 ### Identity and Security
 - SUPI/SUCI identity handling
