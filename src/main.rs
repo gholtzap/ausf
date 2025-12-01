@@ -1,5 +1,13 @@
-use axum::Router;
+mod handlers;
+mod routes;
+mod types;
+
 use std::net::SocketAddr;
+use tower_http::{
+    cors::CorsLayer,
+    trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer},
+};
+use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -18,7 +26,13 @@ async fn main() -> anyhow::Result<()> {
         .unwrap_or_else(|_| "8080".to_string())
         .parse::<u16>()?;
 
-    let app = Router::new();
+    let app = routes::create_routes()
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
+                .on_response(DefaultOnResponse::new().level(Level::INFO)),
+        )
+        .layer(CorsLayer::permissive());
 
     let addr = SocketAddr::from((host.parse::<std::net::IpAddr>()?, port));
     tracing::info!("AUSF server listening on {}", addr);

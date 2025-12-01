@@ -26,7 +26,12 @@ ausf/
 
 ## IMPLEMENTED FEATURES
 
-(Features will be added here as they are completed)
+### Infrastructure
+- HTTP server setup with Axum framework
+- Health check endpoint (/health)
+- Status endpoint (/status)
+- Request tracing middleware
+- CORS support
 
 ## NOT IMPLEMENTED FEATURES
 
@@ -47,28 +52,17 @@ ausf/
 - UPU Protection endpoint (Nausf_UPUProtection)
 
 ### Infrastructure
-- HTTP server setup
 - HTTP/2 support
 - TLS/mTLS support
-- MongoDB integration
+- MongoDB integration (if needed)
 - NRF integration (service discovery and registration)
 - UDM client (Nudm_UEAuthentication)
 - OAuth2 token validation
-
-### Operational
-- Health check endpoints
-- Metrics/Prometheus integration
-- Logging and monitoring
-- Configuration management
-- Rate limiting
-- Request correlation IDs
-- Graceful shutdown
 
 ### Compliance
 - OpenAPI schema validation
 - 3GPP Problem Details format (TS 29.500)
 - API versioning support
-- CORS handling
 
 ## Development
 
