@@ -40,6 +40,12 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - Serving Network Name (SNN) verification
 - Authentication vector validation (RAND, XRES*, AUTN, KAUSF field validation)
 
+### Resynchronization
+- Resynchronization handling (SQN mismatch) via AUTS
+
+### Compliance
+- 3GPP Problem Details format (TS 29.500) for error responses
+
 ## NOT IMPLEMENTED FEATURES
 
 ### Nausf_UEAuthentication Endpoints
@@ -47,9 +53,6 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - POST /ue-authentications/deregister (deregistration)
 - DELETE /ue-authentications/{authCtxId}/5g-aka-confirmation (delete 5G AKA result)
 - DELETE /ue-authentications/{authCtxId}/eap-session (delete EAP result)
-
-### Authentication Logic - 5G AKA Components
-- Resynchronization handling (SQN mismatch)
 
 ### Authentication Logic - Other
 - EAP-AKA' authentication method implementation
@@ -73,7 +76,6 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 
 ### Compliance
 - OpenAPI schema validation
-- 3GPP Problem Details format (TS 29.500)
 - API versioning support
 
 ## Development
