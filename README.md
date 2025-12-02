@@ -50,6 +50,10 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 ### Compliance
 - 3GPP Problem Details format (TS 29.500) for error responses
 
+### NRF Integration - Infrastructure
+- NRF client HTTP implementation
+- NRF client configuration and connection handling
+
 ## NOT IMPLEMENTED FEATURES
 
 ### Nausf_UEAuthentication Endpoints
@@ -68,9 +72,18 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - HTTP/2 support
 - TLS/mTLS support
 - MongoDB integration (if needed)
-- NRF integration (service discovery and registration)
-- UDM client (Nudm_UEAuthentication)
 - OAuth2 token validation
+
+### NRF Integration (Nnrf_NFManagement)
+- NFRegister operation (register AUSF with NRF)
+- NFUpdate operation (update AUSF profile)
+- NFDeregister operation (deregister AUSF from NRF)
+- NFStatusSubscribe operation (subscribe to NF status changes)
+- Heartbeat mechanism (keep-alive with NRF)
+- AUSF profile management
+
+### NRF Integration (Nnrf_NFDiscovery)
+- NFDiscover operation (discover other NFs like UDM)
 
 ### Compliance
 - OpenAPI schema validation

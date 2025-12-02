@@ -2,6 +2,7 @@ pub mod auth;
 pub mod error;
 pub mod health;
 pub mod identity;
+pub mod nrf;
 pub mod problem_details;
 pub mod storage;
 pub mod udm;
