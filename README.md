@@ -92,6 +92,10 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - EAP-AKA' attribute types and structures (AT_RAND, AT_AUTN, AT_RES, AT_AUTS, AT_MAC, AT_KDF, AT_KDF_INPUT, AT_IDENTITY, AT_COUNTER, AT_NONCE_S, etc.)
 - EAP packet serialization and deserialization
 - EAP-AKA' message parsing and building
+- EAP-AKA' key derivation (CK', IK' derivation from CK/IK)
+- EAP-AKA' master key (MK) derivation
+- EAP-AKA' session keys (K_encr, K_aut, K_re, MSK, EMSK) derivation
+- EAP-AKA' MAC computation for AT_MAC attribute
 
 ## NOT IMPLEMENTED FEATURES
 
@@ -100,10 +104,8 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - DELETE /ue-authentications/{authCtxId}/eap-session (delete EAP result)
 
 ### Authentication Logic - EAP-AKA' (Remaining)
-- EAP-AKA' key derivation (CK', IK', MK, K_aut, K_encr, K_re, MSK, EMSK)
 - EAP-AKA' state machine (IDLE, IDENTITY, CHALLENGE, SUCCESS, FAILURE)
 - EAP-AKA' authentication vector processing
-- EAP-AKA' MAC and AT_MAC attribute computation
 - EAP-AKA' AT_AUTN and AT_RES validation
 - EAP-AKA' resynchronization handling (AT_AUTS)
 - EAP-AKA' fast re-authentication support
