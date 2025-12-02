@@ -74,6 +74,11 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - Binary data serialization for cryptographic keys
 - Async database operations with connection pooling
 
+### Protocol Support
+- HTTP/2 support with automatic protocol negotiation
+- HTTP/1.1 backward compatibility
+- Graceful shutdown handling
+
 ## NOT IMPLEMENTED FEATURES
 
 ### Nausf_UEAuthentication Endpoints
@@ -89,7 +94,6 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - UPU Protection endpoint (Nausf_UPUProtection)
 
 ### Infrastructure
-- HTTP/2 support
 - TLS/mTLS support
 - OAuth2 token validation
 

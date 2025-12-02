@@ -192,15 +192,18 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind(addr).await?;
 
     tokio::select! {
-        result = axum::serve(listener, app) => {
-            result?;
-        }
-        _ = shutdown_signal() => {
+        result = axum::serve(
+            listener,
+            app.into_make_service()
+        ).with_graceful_shutdown(async move {
+            shutdown_signal().await;
             tracing::info!("Shutdown signal received, deregistering from NRF...");
             match nrf_client_shutdown.deregister_nf(shutdown_nf_id).await {
                 Ok(_) => tracing::info!("Successfully deregistered from NRF"),
                 Err(e) => tracing::error!("Failed to deregister from NRF: {}", e),
             }
+        }) => {
+            result?;
         }
     }
 
