@@ -13,12 +13,20 @@ use tower_http::{
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
+use tokio_rustls::TlsAcceptor;
+use hyper_util::rt::{TokioIo, TokioExecutor};
+use hyper_util::server::conn::auto::Builder;
+use hyper_util::service::TowerToHyperService;
+use tokio_stream::wrappers::TcpListenerStream;
+use tokio_stream::StreamExt;
+use tower::Service;
 
 use clients::mongodb::MongoClient;
 use clients::nrf::NrfClient;
 use clients::udm::UdmClient;
 use types::{AppState, AuthStore};
 use types::nrf::{NFProfile, NFStatus, NFType, PlmnId};
+use types::tls::TlsConfig;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -187,23 +195,94 @@ async fn main() -> anyhow::Result<()> {
         .layer(CorsLayer::permissive());
 
     let addr = SocketAddr::from((host.parse::<std::net::IpAddr>()?, port));
-    tracing::info!("AUSF server listening on {}", addr);
-
     let listener = tokio::net::TcpListener::bind(addr).await?;
 
-    tokio::select! {
-        result = axum::serve(
-            listener,
-            app.into_make_service()
-        ).with_graceful_shutdown(async move {
-            shutdown_signal().await;
-            tracing::info!("Shutdown signal received, deregistering from NRF...");
-            match nrf_client_shutdown.deregister_nf(shutdown_nf_id).await {
-                Ok(_) => tracing::info!("Successfully deregistered from NRF"),
-                Err(e) => tracing::error!("Failed to deregister from NRF: {}", e),
+    let tls_config = TlsConfig::from_env();
+
+    if let Some(tls_config) = tls_config {
+        let rustls_config = tls_config.build_server_config()
+            .map_err(|e| anyhow::anyhow!("Failed to build TLS config: {}", e))?;
+
+        if tls_config.client_ca_path.is_some() {
+            tracing::info!("AUSF server listening on {} with mTLS", addr);
+        } else {
+            tracing::info!("AUSF server listening on {} with TLS", addr);
+        }
+
+        let tls_acceptor = TlsAcceptor::from(rustls_config);
+        let mut tcp_stream = TcpListenerStream::new(listener);
+        let make_service = app.into_make_service();
+
+        loop {
+            tokio::select! {
+                incoming = tcp_stream.next() => {
+                    let Some(stream) = incoming else {
+                        continue;
+                    };
+                    let stream = match stream {
+                        Ok(s) => s,
+                        Err(e) => {
+                            tracing::error!("Failed to accept connection: {}", e);
+                            continue;
+                        }
+                    };
+
+                    let tls_acceptor = tls_acceptor.clone();
+                    let mut make_service = make_service.clone();
+                    let remote_addr = stream.peer_addr().ok();
+
+                    tokio::spawn(async move {
+                        let tls_stream = match tls_acceptor.accept(stream).await {
+                            Ok(s) => s,
+                            Err(e) => {
+                                tracing::error!("TLS handshake failed: {}", e);
+                                return;
+                            }
+                        };
+
+                        let tower_service = match make_service.call(remote_addr.as_ref()).await {
+                            Ok(s) => s,
+                            Err(_) => return,
+                        };
+
+                        let hyper_service = TowerToHyperService::new(tower_service);
+                        let io = TokioIo::new(tls_stream);
+
+                        if let Err(e) = Builder::new(TokioExecutor::new())
+                            .serve_connection(io, hyper_service)
+                            .await
+                        {
+                            tracing::error!("Error serving connection: {}", e);
+                        }
+                    });
+                }
+                _ = shutdown_signal() => {
+                    tracing::info!("Shutdown signal received, deregistering from NRF...");
+                    match nrf_client_shutdown.deregister_nf(shutdown_nf_id).await {
+                        Ok(_) => tracing::info!("Successfully deregistered from NRF"),
+                        Err(e) => tracing::error!("Failed to deregister from NRF: {}", e),
+                    }
+                    break;
+                }
             }
-        }) => {
-            result?;
+        }
+    } else {
+        tracing::info!("AUSF server listening on {} (HTTP only)", addr);
+
+        tokio::select! {
+            result = axum::serve(
+                listener,
+                app.into_make_service()
+            ).with_graceful_shutdown(async move {
+                shutdown_signal().await;
+                tracing::info!("Shutdown signal received, deregistering from NRF...");
+                match nrf_client_shutdown.deregister_nf(shutdown_nf_id).await {
+                    Ok(_) => tracing::info!("Successfully deregistered from NRF"),
+                    Err(e) => tracing::error!("Failed to deregister from NRF: {}", e),
+                }
+            }) => {
+                result?;
+            }
         }
     }
 

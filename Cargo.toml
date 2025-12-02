@@ -25,3 +25,7 @@ hmac = "0.12"
 hex = "0.4"
 reqwest = { version = "0.12", features = ["json"] }
 regex = "1"
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "logging", "tls12"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+rustls-pemfile = "2"
+tokio-stream = { version = "0.1", features = ["net"] }

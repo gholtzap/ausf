@@ -79,6 +79,12 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - HTTP/1.1 backward compatibility
 - Graceful shutdown handling
 
+### Security
+- TLS/mTLS support with rustls
+- Client certificate verification for mTLS
+- Configurable TLS certificates and keys
+- Automatic ALPN negotiation (h2, http/1.1)
+
 ## NOT IMPLEMENTED FEATURES
 
 ### Nausf_UEAuthentication Endpoints
@@ -94,7 +100,6 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - UPU Protection endpoint (Nausf_UPUProtection)
 
 ### Infrastructure
-- TLS/mTLS support
 - OAuth2 token validation
 
 ### NRF Integration (Nnrf_NFManagement)
@@ -118,6 +123,10 @@ Copy `.env.example` to `.env` and configure:
 - MongoDB connection string
 - Server port and host
 - Log level
+- TLS configuration (optional):
+  - TLS_CERT_PATH: Path to TLS certificate file
+  - TLS_KEY_PATH: Path to TLS private key file
+  - TLS_CLIENT_CA_PATH: Path to client CA certificate for mTLS (optional)
 
 ### Building
 

@@ -7,6 +7,7 @@ pub mod identity;
 pub mod nrf;
 pub mod problem_details;
 pub mod storage;
+pub mod tls;
 pub mod udm;
 
 pub use app_state::*;
