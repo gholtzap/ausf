@@ -59,6 +59,11 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - AUSF profile management (NF instance ID, PLMN, capacity, priority)
 - Heartbeat mechanism (keep-alive with NRF)
 
+### NRF Integration (Nnrf_NFDiscovery)
+- NFDiscover operation (discover other NFs like UDM)
+- Dynamic UDM service discovery on startup
+- Automatic UDM endpoint configuration via NRF
+
 ## NOT IMPLEMENTED FEATURES
 
 ### Nausf_UEAuthentication Endpoints
@@ -83,9 +88,6 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - NFUpdate operation (update AUSF profile)
 - NFDeregister operation (deregister AUSF from NRF)
 - NFStatusSubscribe operation (subscribe to NF status changes)
-
-### NRF Integration (Nnrf_NFDiscovery)
-- NFDiscover operation (discover other NFs like UDM)
 
 ### Compliance
 - OpenAPI schema validation

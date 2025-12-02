@@ -1,4 +1,4 @@
-use crate::types::nrf::{NFProfile, NFRegisterRequest, NFRegisterResponse, NFUpdateRequest};
+use crate::types::nrf::{NFProfile, NFRegisterRequest, NFRegisterResponse, NFType, NFUpdateRequest, SearchResult};
 use reqwest::Client;
 use std::env;
 use uuid::Uuid;
@@ -120,5 +120,34 @@ impl NrfClient {
 
         let profile = response.json::<NFProfile>().await?;
         Ok(profile)
+    }
+
+    pub async fn discover_nf(
+        &self,
+        target_nf_type: NFType,
+        requester_nf_instance_id: Option<Uuid>,
+    ) -> Result<SearchResult, Box<dyn std::error::Error + Send + Sync>> {
+        let mut url = format!(
+            "{}/nnrf-disc/v1/nf-instances?target-nf-type={:?}",
+            self.base_url, target_nf_type
+        );
+
+        if let Some(requester_id) = requester_nf_instance_id {
+            url.push_str(&format!("&requester-nf-instance-id={}", requester_id));
+        }
+
+        let response = self.client
+            .get(&url)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("NRF discover failed with status {}: {}", status, error_text).into());
+        }
+
+        let search_result = response.json::<SearchResult>().await?;
+        Ok(search_result)
     }
 }

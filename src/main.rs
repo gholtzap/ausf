@@ -15,6 +15,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 
 use clients::nrf::NrfClient;
+use clients::udm::UdmClient;
 use types::{create_auth_store, AppState};
 use types::nrf::{NFProfile, NFStatus, NFType, PlmnId};
 
@@ -120,11 +121,50 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
+    let udm_client = match std::env::var("UDM_URI") {
+        Ok(uri) if !uri.is_empty() => {
+            tracing::info!("Using UDM_URI from environment: {}", uri);
+            Arc::new(UdmClient::with_base_url(uri)
+                .map_err(|e| anyhow::anyhow!("Failed to create UDM client: {}", e))?)
+        }
+        _ => {
+            tracing::info!("Discovering UDM via NRF");
+            match nrf_client.discover_nf(NFType::Udm, Some(nf_instance_id)).await {
+                Ok(search_result) => {
+                    if let Some(udm_profile) = search_result.nf_instances.first() {
+                        let udm_uri = if let Some(ipv4) = udm_profile.ipv4_addresses.as_ref().and_then(|v| v.first()) {
+                            format!("http://{}", ipv4)
+                        } else if let Some(fqdn) = &udm_profile.fqdn {
+                            format!("http://{}", fqdn)
+                        } else {
+                            tracing::warn!("UDM discovered but no valid address found, using default");
+                            "http://127.0.0.1:8081".to_string()
+                        };
+
+                        tracing::info!("Discovered UDM at: {}", udm_uri);
+                        Arc::new(UdmClient::with_base_url(udm_uri)
+                            .map_err(|e| anyhow::anyhow!("Failed to create UDM client: {}", e))?)
+                    } else {
+                        tracing::warn!("No UDM instances found via NRF, using default");
+                        Arc::new(UdmClient::new()
+                            .map_err(|e| anyhow::anyhow!("Failed to create UDM client: {}", e))?)
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to discover UDM via NRF: {}, using default", e);
+                    Arc::new(UdmClient::new()
+                        .map_err(|e| anyhow::anyhow!("Failed to create UDM client: {}", e))?)
+                }
+            }
+        }
+    };
+
     let auth_store = create_auth_store();
 
     let app_state = AppState {
         auth_store,
         nrf_client,
+        udm_client,
         nf_instance_id,
     };
 

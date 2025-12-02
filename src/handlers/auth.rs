@@ -7,7 +7,6 @@ use axum::{
 use std::collections::HashMap;
 use uuid::Uuid;
 
-use crate::clients::UdmClient;
 use crate::crypto::{compute_hxres_star, derive_kseaf, verify_snn_authorization, validate_authentication_vector, check_home_network, NetworkLocation};
 use crate::types::{
     AppError, AppState, AuthData5G, AuthType, AuthenticationInfo, Av5gAka, ConfirmationData,
@@ -58,15 +57,12 @@ pub async fn initiate_authentication(
         payload.serving_network_name
     );
 
-    let udm_client = UdmClient::new()
-        .map_err(|e| AppError::InternalError(format!("Failed to create UDM client: {}", e)))?;
-
     let resync_info = payload.resynchronization_info.as_ref().map(|r| ResynchronizationInfo {
         rand: r.rand.clone(),
         auts: r.auts.clone(),
     });
 
-    let auth_info_result = udm_client
+    let auth_info_result = app_state.udm_client
         .get_authentication_info(
             &payload.supi_or_suci,
             &payload.serving_network_name,

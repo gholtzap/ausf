@@ -155,3 +155,15 @@ pub struct NFUpdateRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub load: Option<u8>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchResult {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub validity_period: Option<u32>,
+    pub nf_instances: Vec<NFProfile>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub search_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub num_nf_inst_complete: Option<u32>,
+}

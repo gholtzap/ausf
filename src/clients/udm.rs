@@ -22,6 +22,13 @@ impl UdmClient {
         })
     }
 
+    pub fn with_base_url(base_url: String) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self {
+            client: Client::new(),
+            base_url,
+        })
+    }
+
     pub async fn get_authentication_info(
         &self,
         supi_or_suci: &str,
