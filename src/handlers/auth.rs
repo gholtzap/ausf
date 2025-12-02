@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::clients::UdmClient;
-use crate::crypto::{compute_hxres_star, derive_kseaf, verify_snn_authorization};
+use crate::crypto::{compute_hxres_star, derive_kseaf, verify_snn_authorization, validate_authentication_vector};
 use crate::types::{
     AppError, AuthContextStore, AuthData5G, AuthType, AuthenticationInfo, Av5gAka, ConfirmationData,
     ConfirmationDataResponse, StoredAuthContext, UEAuthenticationCtx, AuthResult,
@@ -57,6 +57,9 @@ pub async fn initiate_authentication(
     let auth_vector = auth_info_result
         .authentication_vector
         .ok_or_else(|| AppError::InternalError("No authentication vector received from UDM".to_string()))?;
+
+    validate_authentication_vector(&auth_vector)
+        .map_err(|e| AppError::InternalError(format!("Authentication vector validation failed: {}", e)))?;
 
     let AuthenticationVector::Av5gAka(av) = auth_vector else {
         return Err(AppError::InternalError("Unsupported authentication vector type".to_string()));

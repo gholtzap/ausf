@@ -14,16 +14,6 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - **Nausf_SoRProtection**: Steering of Roaming protection service
 - **Nausf_UPUProtection**: UE Parameters Update protection service
 
-## Project Structure
-
-```
-ausf/
-├── context/3gpp/      # 3GPP OpenAPI specifications
-├── src/               # Source code
-├── types/             # Type definitions
-└── Cargo.toml         # Rust dependencies
-```
-
 ## IMPLEMENTED FEATURES
 
 ### Infrastructure
@@ -48,6 +38,7 @@ ausf/
 
 ### Identity and Security
 - Serving Network Name (SNN) verification
+- Authentication vector validation (RAND, XRES*, AUTN, KAUSF field validation)
 
 ## NOT IMPLEMENTED FEATURES
 
@@ -62,7 +53,6 @@ ausf/
 
 ### Authentication Logic - Other
 - EAP-AKA' authentication method implementation
-- Authentication vector validation
 
 ### Identity and Security
 - SUPI/SUCI identity handling
@@ -112,13 +102,3 @@ cargo build
 ```bash
 cargo run
 ```
-
-## Standards Compliance
-
-This implementation adheres to:
-- 3GPP TS 29.509 V18.3.0 - Authentication Server Services
-- 3GPP TS 29.501 - Principles and Guidelines for Services Definition
-
-## License
-
-TBD
