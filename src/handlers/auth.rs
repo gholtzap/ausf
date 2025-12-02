@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::clients::UdmClient;
-use crate::crypto::{compute_hxres_star, derive_kseaf, verify_snn_authorization, validate_authentication_vector};
+use crate::crypto::{compute_hxres_star, derive_kseaf, verify_snn_authorization, validate_authentication_vector, check_home_network, NetworkLocation};
 use crate::types::{
     AppError, AuthContextStore, AuthData5G, AuthType, AuthenticationInfo, Av5gAka, ConfirmationData,
     ConfirmationDataResponse, StoredAuthContext, UEAuthenticationCtx, AuthResult, SupiOrSuci,
@@ -32,6 +32,18 @@ pub async fn initiate_authentication(
         plmn.validate()
             .map_err(|e| AppError::BadRequest(format!("Invalid PLMN: {}", e)))?;
         tracing::info!("Extracted and validated PLMN: {}", plmn.to_string());
+    }
+
+    let network_location = check_home_network(&identity)
+        .map_err(|e| AppError::InternalError(format!("Home network check failed: {}", e)))?;
+
+    match network_location {
+        NetworkLocation::Home => {
+            tracing::info!("Home network authentication for UE: {}", payload.supi_or_suci);
+        }
+        NetworkLocation::Visited => {
+            tracing::info!("Visited network authentication (roaming) for UE: {}", payload.supi_or_suci);
+        }
     }
 
     let allowed_plmns = env::var("ALLOWED_PLMNS")
