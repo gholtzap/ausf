@@ -11,7 +11,7 @@ use crate::clients::UdmClient;
 use crate::crypto::{compute_hxres_star, derive_kseaf, verify_snn_authorization, validate_authentication_vector};
 use crate::types::{
     AppError, AuthContextStore, AuthData5G, AuthType, AuthenticationInfo, Av5gAka, ConfirmationData,
-    ConfirmationDataResponse, StoredAuthContext, UEAuthenticationCtx, AuthResult,
+    ConfirmationDataResponse, StoredAuthContext, UEAuthenticationCtx, AuthResult, SupiOrSuci,
 };
 use crate::types::udm::{AuthenticationVector, ResynchronizationInfo};
 use std::env;
@@ -24,6 +24,15 @@ pub async fn initiate_authentication(
         "Received authentication request for UE: {}",
         payload.supi_or_suci
     );
+
+    let identity = SupiOrSuci::parse(&payload.supi_or_suci)
+        .map_err(|e| AppError::BadRequest(format!("Invalid SUPI/SUCI format: {}", e)))?;
+
+    if let Some(plmn) = identity.extract_plmn() {
+        plmn.validate()
+            .map_err(|e| AppError::BadRequest(format!("Invalid PLMN: {}", e)))?;
+        tracing::info!("Extracted and validated PLMN: {}", plmn.to_string());
+    }
 
     let allowed_plmns = env::var("ALLOWED_PLMNS")
         .ok()

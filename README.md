@@ -39,6 +39,8 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 ### Identity and Security
 - Serving Network Name (SNN) verification
 - Authentication vector validation (RAND, XRES*, AUTN, KAUSF field validation)
+- SUPI/SUCI identity handling (parsing and format validation)
+- PLMN ID validation (MCC/MNC extraction and validation)
 
 ### Resynchronization
 - Resynchronization handling (SQN mismatch) via AUTS
@@ -58,9 +60,7 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - EAP-AKA' authentication method implementation
 
 ### Identity and Security
-- SUPI/SUCI identity handling
 - Home network authentication checks
-- PLMN ID validation
 
 ### Service Endpoints
 - SoR Protection endpoint (Nausf_SoRProtection)
