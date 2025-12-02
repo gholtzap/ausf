@@ -39,4 +39,13 @@ impl AuthStore {
         self.collection.delete_one(filter).await?;
         Ok(())
     }
+
+    pub async fn delete_by_supi(
+        &self,
+        supi: &str,
+    ) -> Result<u64, Box<dyn std::error::Error + Send + Sync>> {
+        let filter = mongodb::bson::doc! { "supi": supi };
+        let result = self.collection.delete_many(filter).await?;
+        Ok(result.deleted_count)
+    }
 }

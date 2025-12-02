@@ -27,6 +27,7 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - POST /ue-authentications (authentication initiation)
 - PUT /ue-authentications/{authCtxId}/5g-aka-confirmation (5G AKA confirmation)
 - DELETE /ue-authentications/{authCtxId}/5g-aka-confirmation (delete 5G AKA result)
+- POST /ue-authentications/deregister (deregistration)
 
 ### Authentication Logic
 - KAUSF key derivation (KDF function)
@@ -89,7 +90,6 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 
 ### Nausf_UEAuthentication Endpoints
 - POST /ue-authentications/{authCtxId}/eap-session (EAP session handling)
-- POST /ue-authentications/deregister (deregistration)
 - DELETE /ue-authentications/{authCtxId}/eap-session (delete EAP result)
 
 ### Authentication Logic - Other

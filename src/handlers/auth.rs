@@ -11,6 +11,7 @@ use crate::crypto::{compute_hxres_star, derive_kseaf, verify_snn_authorization, 
 use crate::types::{
     AppError, AppState, AuthData5G, AuthType, AuthenticationInfo, Av5gAka, ConfirmationData,
     ConfirmationDataResponse, StoredAuthContext, UEAuthenticationCtx, AuthResult, SupiOrSuci,
+    DeregistrationInfo,
 };
 use crate::types::udm::{AuthenticationVector, ResynchronizationInfo};
 use std::env;
@@ -223,5 +224,29 @@ pub async fn delete_5g_aka_confirmation(
         .map_err(|e| AppError::InternalError(format!("Failed to delete auth context: {}", e)))?;
 
     tracing::info!("Successfully deleted authentication context: {}", auth_ctx_id);
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn deregister(
+    State(app_state): State<AppState>,
+    Json(payload): Json<DeregistrationInfo>,
+) -> Result<StatusCode, AppError> {
+    tracing::info!(
+        "Received deregistration request for SUPI: {}",
+        payload.supi
+    );
+
+    let deleted_count = app_state
+        .auth_store
+        .delete_by_supi(&payload.supi)
+        .await
+        .map_err(|e| AppError::InternalError(format!("Failed to delete auth contexts by SUPI: {}", e)))?;
+
+    tracing::info!(
+        "Successfully deregistered SUPI: {}, deleted {} authentication context(s)",
+        payload.supi,
+        deleted_count
+    );
+
     Ok(StatusCode::NO_CONTENT)
 }

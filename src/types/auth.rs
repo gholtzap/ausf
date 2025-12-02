@@ -91,3 +91,11 @@ pub enum AuthResult {
     Success,
     Failure,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeregistrationInfo {
+    pub supi: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub supported_features: Option<String>,
+}
