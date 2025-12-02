@@ -64,6 +64,11 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - Dynamic UDM service discovery on startup
 - Automatic UDM endpoint configuration via NRF
 
+### Persistence
+- MongoDB integration for authentication context storage
+- Binary data serialization for cryptographic keys
+- Async database operations with connection pooling
+
 ## NOT IMPLEMENTED FEATURES
 
 ### Nausf_UEAuthentication Endpoints
@@ -81,7 +86,6 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 ### Infrastructure
 - HTTP/2 support
 - TLS/mTLS support
-- MongoDB integration (if needed)
 - OAuth2 token validation
 
 ### NRF Integration (Nnrf_NFManagement)

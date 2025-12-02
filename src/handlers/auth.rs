@@ -95,6 +95,7 @@ pub async fn initiate_authentication(
     let auth_ctx_id = Uuid::new_v4().to_string();
 
     let stored_ctx = StoredAuthContext {
+        auth_ctx_id: auth_ctx_id.clone(),
         supi_or_suci: payload.supi_or_suci.clone(),
         supi: auth_info_result.supi.clone(),
         rand: rand_bytes,
@@ -105,9 +106,9 @@ pub async fn initiate_authentication(
 
     app_state
         .auth_store
-        .lock()
-        .unwrap()
-        .insert(auth_ctx_id.clone(), stored_ctx);
+        .insert(auth_ctx_id.clone(), stored_ctx)
+        .await
+        .map_err(|e| AppError::InternalError(format!("Failed to store auth context: {}", e)))?;
 
     let auth_ctx = UEAuthenticationCtx {
         auth_type: AuthType::FiveGAka,
@@ -149,12 +150,11 @@ pub async fn confirm_5g_aka(
         auth_ctx_id
     );
 
-    let stored_ctx = {
-        let store = app_state.auth_store.lock().unwrap();
-        store.get(&auth_ctx_id).cloned()
-    };
-
-    let stored_ctx = stored_ctx
+    let stored_ctx = app_state
+        .auth_store
+        .get(&auth_ctx_id)
+        .await
+        .map_err(|e| AppError::InternalError(format!("Failed to retrieve auth context: {}", e)))?
         .ok_or_else(|| AppError::NotFound(format!("Authentication context not found: {}", auth_ctx_id)))?;
 
     let res_star_bytes = hex::decode(&payload.res_star)
@@ -178,7 +178,11 @@ pub async fn confirm_5g_aka(
     let kseaf = derive_kseaf(&stored_ctx.kausf, &supi.clone().unwrap_or_default());
     let kseaf_hex = hex::encode(kseaf);
 
-    app_state.auth_store.lock().unwrap().remove(&auth_ctx_id);
+    app_state
+        .auth_store
+        .delete(&auth_ctx_id)
+        .await
+        .map_err(|e| AppError::InternalError(format!("Failed to delete auth context: {}", e)))?;
 
     tracing::info!("Authentication successful for authCtxId: {}", auth_ctx_id);
 
@@ -198,14 +202,25 @@ pub async fn delete_5g_aka_confirmation(
         auth_ctx_id
     );
 
-    let removed = app_state.auth_store.lock().unwrap().remove(&auth_ctx_id);
+    let exists = app_state
+        .auth_store
+        .get(&auth_ctx_id)
+        .await
+        .map_err(|e| AppError::InternalError(format!("Failed to check auth context: {}", e)))?
+        .is_some();
 
-    if removed.is_none() {
+    if !exists {
         return Err(AppError::NotFound(format!(
             "Authentication context not found: {}",
             auth_ctx_id
         )));
     }
+
+    app_state
+        .auth_store
+        .delete(&auth_ctx_id)
+        .await
+        .map_err(|e| AppError::InternalError(format!("Failed to delete auth context: {}", e)))?;
 
     tracing::info!("Successfully deleted authentication context: {}", auth_ctx_id);
     Ok(StatusCode::NO_CONTENT)

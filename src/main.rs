@@ -14,9 +14,10 @@ use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 
+use clients::mongodb::MongoClient;
 use clients::nrf::NrfClient;
 use clients::udm::UdmClient;
-use types::{create_auth_store, AppState};
+use types::{AppState, AuthStore};
 use types::nrf::{NFProfile, NFStatus, NFType, PlmnId};
 
 #[tokio::main]
@@ -159,7 +160,13 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
-    let auth_store = create_auth_store();
+    let mongo_client = Arc::new(
+        MongoClient::new()
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to create MongoDB client: {}", e))?
+    );
+
+    let auth_store = Arc::new(AuthStore::new(mongo_client));
 
     let app_state = AppState {
         auth_store,
