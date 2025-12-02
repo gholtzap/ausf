@@ -49,6 +49,19 @@ pub fn compute_hxres_star(rand: &[u8], xres_star: &[u8]) -> Vec<u8> {
     hasher.finalize().to_vec()
 }
 
+pub fn derive_kseaf(kausf: &[u8], supi: &str) -> Vec<u8> {
+    let supi_bytes = supi.as_bytes();
+    let supi_len = supi_bytes.len() as u16;
+
+    let mut s = Vec::new();
+    s.push(0x6C);
+    s.extend_from_slice(supi_bytes);
+    s.extend_from_slice(&supi_len.to_be_bytes());
+    s.extend_from_slice(&[0x00, 0x01]);
+
+    kdf(kausf, &s)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

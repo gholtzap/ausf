@@ -12,6 +12,8 @@ use tower_http::{
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use types::create_auth_store;
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
@@ -28,7 +30,9 @@ async fn main() -> anyhow::Result<()> {
         .unwrap_or_else(|_| "8080".to_string())
         .parse::<u16>()?;
 
-    let app = routes::create_routes()
+    let auth_store = create_auth_store();
+
+    let app = routes::create_routes(auth_store)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::new().level(Level::INFO))

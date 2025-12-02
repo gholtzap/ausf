@@ -11,6 +11,10 @@ pub enum AppError {
     InternalError(String),
     #[error("Configuration error: {0}")]
     ConfigError(String),
+    #[error("Not found: {0}")]
+    NotFound(String),
+    #[error("Bad request: {0}")]
+    BadRequest(String),
 }
 
 #[derive(Serialize)]
@@ -24,6 +28,8 @@ impl IntoResponse for AppError {
         let (status, message) = match self {
             AppError::InternalError(ref msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.clone()),
             AppError::ConfigError(ref msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.clone()),
+            AppError::NotFound(ref msg) => (StatusCode::NOT_FOUND, msg.clone()),
+            AppError::BadRequest(ref msg) => (StatusCode::BAD_REQUEST, msg.clone()),
         };
 
         let body = ErrorResponse {
