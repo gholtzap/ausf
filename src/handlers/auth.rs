@@ -191,3 +191,25 @@ pub async fn confirm_5g_aka(
         kseaf: Some(kseaf_hex),
     }))
 }
+
+pub async fn delete_5g_aka_confirmation(
+    State(auth_store): State<AuthContextStore>,
+    Path(auth_ctx_id): Path<String>,
+) -> Result<StatusCode, AppError> {
+    tracing::info!(
+        "Received delete request for 5G AKA confirmation, authCtxId: {}",
+        auth_ctx_id
+    );
+
+    let removed = auth_store.lock().unwrap().remove(&auth_ctx_id);
+
+    if removed.is_none() {
+        return Err(AppError::NotFound(format!(
+            "Authentication context not found: {}",
+            auth_ctx_id
+        )));
+    }
+
+    tracing::info!("Successfully deleted authentication context: {}", auth_ctx_id);
+    Ok(StatusCode::NO_CONTENT)
+}
