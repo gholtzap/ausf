@@ -64,6 +64,11 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - Dynamic UDM service discovery on startup
 - Automatic UDM endpoint configuration via NRF
 
+### NRF Integration - Lifecycle Management
+- NFUpdate operation (update AUSF profile dynamically)
+- NFDeregister operation (graceful deregistration on shutdown)
+- Admin endpoint for manual profile updates (PATCH /admin/nf-profile)
+
 ### Persistence
 - MongoDB integration for authentication context storage
 - Binary data serialization for cryptographic keys
@@ -89,8 +94,6 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - OAuth2 token validation
 
 ### NRF Integration (Nnrf_NFManagement)
-- NFUpdate operation (update AUSF profile)
-- NFDeregister operation (deregister AUSF from NRF)
 - NFStatusSubscribe operation (subscribe to NF status changes)
 
 ### Compliance

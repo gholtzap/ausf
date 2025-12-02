@@ -168,6 +168,9 @@ async fn main() -> anyhow::Result<()> {
 
     let auth_store = Arc::new(AuthStore::new(mongo_client));
 
+    let nrf_client_shutdown = Arc::clone(&nrf_client);
+    let shutdown_nf_id = nf_instance_id;
+
     let app_state = AppState {
         auth_store,
         nrf_client,
@@ -187,7 +190,43 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("AUSF server listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+
+    tokio::select! {
+        result = axum::serve(listener, app) => {
+            result?;
+        }
+        _ = shutdown_signal() => {
+            tracing::info!("Shutdown signal received, deregistering from NRF...");
+            match nrf_client_shutdown.deregister_nf(shutdown_nf_id).await {
+                Ok(_) => tracing::info!("Successfully deregistered from NRF"),
+                Err(e) => tracing::error!("Failed to deregister from NRF: {}", e),
+            }
+        }
+    }
 
     Ok(())
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
 }
