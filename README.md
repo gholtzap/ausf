@@ -86,14 +86,27 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - Configurable TLS certificates and keys
 - Automatic ALPN negotiation (h2, http/1.1)
 
+### EAP-AKA' Support
+- EAP packet structures (Code, Identifier, Length, Type)
+- EAP-AKA' message types and subtypes (Challenge, Authentication-Reject, Synchronization-Failure, Identity, Notification, Reauthentication, Client-Error)
+- EAP-AKA' attribute types and structures (AT_RAND, AT_AUTN, AT_RES, AT_AUTS, AT_MAC, AT_KDF, AT_KDF_INPUT, AT_IDENTITY, AT_COUNTER, AT_NONCE_S, etc.)
+- EAP packet serialization and deserialization
+- EAP-AKA' message parsing and building
+
 ## NOT IMPLEMENTED FEATURES
 
 ### Nausf_UEAuthentication Endpoints
 - POST /ue-authentications/{authCtxId}/eap-session (EAP session handling)
 - DELETE /ue-authentications/{authCtxId}/eap-session (delete EAP result)
 
-### Authentication Logic - Other
-- EAP-AKA' authentication method implementation
+### Authentication Logic - EAP-AKA' (Remaining)
+- EAP-AKA' key derivation (CK', IK', MK, K_aut, K_encr, K_re, MSK, EMSK)
+- EAP-AKA' state machine (IDLE, IDENTITY, CHALLENGE, SUCCESS, FAILURE)
+- EAP-AKA' authentication vector processing
+- EAP-AKA' MAC and AT_MAC attribute computation
+- EAP-AKA' AT_AUTN and AT_RES validation
+- EAP-AKA' resynchronization handling (AT_AUTS)
+- EAP-AKA' fast re-authentication support
 
 ### Service Endpoints
 - SoR Protection endpoint (Nausf_SoRProtection)

@@ -1,6 +1,7 @@
 pub mod app_state;
 pub mod auth;
 pub mod auth_store;
+pub mod eap;
 pub mod error;
 pub mod health;
 pub mod identity;
@@ -13,6 +14,7 @@ pub mod udm;
 pub use app_state::*;
 pub use auth::*;
 pub use auth_store::AuthStore;
+pub use eap::*;
 pub use error::AppError;
 pub use identity::*;
 pub use problem_details::*;
