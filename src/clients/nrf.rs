@@ -9,7 +9,7 @@ pub struct NrfClient {
 }
 
 impl NrfClient {
-    pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let base_url = env::var("NRF_URI")
             .unwrap_or_else(|_| "http://127.0.0.1:8000".to_string());
 
@@ -22,7 +22,7 @@ impl NrfClient {
     pub async fn register_nf(
         &self,
         profile: NFProfile,
-    ) -> Result<NFRegisterResponse, Box<dyn std::error::Error>> {
+    ) -> Result<NFRegisterResponse, Box<dyn std::error::Error + Send + Sync>> {
         let nf_instance_id = profile.nf_instance_id;
         let request = NFRegisterRequest { nf_profile: profile };
 
@@ -52,7 +52,7 @@ impl NrfClient {
         &self,
         nf_instance_id: Uuid,
         update: NFUpdateRequest,
-    ) -> Result<NFProfile, Box<dyn std::error::Error>> {
+    ) -> Result<NFProfile, Box<dyn std::error::Error + Send + Sync>> {
         let url = format!(
             "{}/nnrf-nfm/v1/nf-instances/{}",
             self.base_url, nf_instance_id
@@ -78,7 +78,7 @@ impl NrfClient {
     pub async fn deregister_nf(
         &self,
         nf_instance_id: Uuid,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let url = format!(
             "{}/nnrf-nfm/v1/nf-instances/{}",
             self.base_url, nf_instance_id
@@ -101,7 +101,7 @@ impl NrfClient {
     pub async fn get_nf_profile(
         &self,
         nf_instance_id: Uuid,
-    ) -> Result<NFProfile, Box<dyn std::error::Error>> {
+    ) -> Result<NFProfile, Box<dyn std::error::Error + Send + Sync>> {
         let url = format!(
             "{}/nnrf-nfm/v1/nf-instances/{}",
             self.base_url, nf_instance_id

@@ -10,14 +10,14 @@ use uuid::Uuid;
 use crate::clients::UdmClient;
 use crate::crypto::{compute_hxres_star, derive_kseaf, verify_snn_authorization, validate_authentication_vector, check_home_network, NetworkLocation};
 use crate::types::{
-    AppError, AuthContextStore, AuthData5G, AuthType, AuthenticationInfo, Av5gAka, ConfirmationData,
+    AppError, AppState, AuthData5G, AuthType, AuthenticationInfo, Av5gAka, ConfirmationData,
     ConfirmationDataResponse, StoredAuthContext, UEAuthenticationCtx, AuthResult, SupiOrSuci,
 };
 use crate::types::udm::{AuthenticationVector, ResynchronizationInfo};
 use std::env;
 
 pub async fn initiate_authentication(
-    State(auth_store): State<AuthContextStore>,
+    State(app_state): State<AppState>,
     Json(payload): Json<AuthenticationInfo>,
 ) -> Result<Response, AppError> {
     tracing::info!(
@@ -107,7 +107,8 @@ pub async fn initiate_authentication(
         serving_network_name: payload.serving_network_name.clone(),
     };
 
-    auth_store
+    app_state
+        .auth_store
         .lock()
         .unwrap()
         .insert(auth_ctx_id.clone(), stored_ctx);
@@ -143,7 +144,7 @@ pub async fn initiate_authentication(
 }
 
 pub async fn confirm_5g_aka(
-    State(auth_store): State<AuthContextStore>,
+    State(app_state): State<AppState>,
     Path(auth_ctx_id): Path<String>,
     Json(payload): Json<ConfirmationData>,
 ) -> Result<Json<ConfirmationDataResponse>, AppError> {
@@ -153,7 +154,7 @@ pub async fn confirm_5g_aka(
     );
 
     let stored_ctx = {
-        let store = auth_store.lock().unwrap();
+        let store = app_state.auth_store.lock().unwrap();
         store.get(&auth_ctx_id).cloned()
     };
 
@@ -181,7 +182,7 @@ pub async fn confirm_5g_aka(
     let kseaf = derive_kseaf(&stored_ctx.kausf, &supi.clone().unwrap_or_default());
     let kseaf_hex = hex::encode(kseaf);
 
-    auth_store.lock().unwrap().remove(&auth_ctx_id);
+    app_state.auth_store.lock().unwrap().remove(&auth_ctx_id);
 
     tracing::info!("Authentication successful for authCtxId: {}", auth_ctx_id);
 
@@ -193,7 +194,7 @@ pub async fn confirm_5g_aka(
 }
 
 pub async fn delete_5g_aka_confirmation(
-    State(auth_store): State<AuthContextStore>,
+    State(app_state): State<AppState>,
     Path(auth_ctx_id): Path<String>,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(
@@ -201,7 +202,7 @@ pub async fn delete_5g_aka_confirmation(
         auth_ctx_id
     );
 
-    let removed = auth_store.lock().unwrap().remove(&auth_ctx_id);
+    let removed = app_state.auth_store.lock().unwrap().remove(&auth_ctx_id);
 
     if removed.is_none() {
         return Err(AppError::NotFound(format!(

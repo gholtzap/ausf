@@ -54,6 +54,10 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - NRF client HTTP implementation
 - NRF client configuration and connection handling
 
+### NRF Integration (Nnrf_NFManagement)
+- NFRegister operation (register AUSF with NRF on startup)
+- AUSF profile management (NF instance ID, PLMN, capacity, priority)
+
 ## NOT IMPLEMENTED FEATURES
 
 ### Nausf_UEAuthentication Endpoints
@@ -75,12 +79,10 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - OAuth2 token validation
 
 ### NRF Integration (Nnrf_NFManagement)
-- NFRegister operation (register AUSF with NRF)
 - NFUpdate operation (update AUSF profile)
 - NFDeregister operation (deregister AUSF from NRF)
 - NFStatusSubscribe operation (subscribe to NF status changes)
 - Heartbeat mechanism (keep-alive with NRF)
-- AUSF profile management
 
 ### NRF Integration (Nnrf_NFDiscovery)
 - NFDiscover operation (discover other NFs like UDM)
