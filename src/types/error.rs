@@ -15,6 +15,8 @@ pub enum AppError {
     NotFound(String),
     #[error("Bad request: {0}")]
     BadRequest(String),
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
 }
 
 #[derive(Serialize)]
@@ -30,6 +32,7 @@ impl IntoResponse for AppError {
             AppError::ConfigError(ref msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.clone()),
             AppError::NotFound(ref msg) => (StatusCode::NOT_FOUND, msg.clone()),
             AppError::BadRequest(ref msg) => (StatusCode::BAD_REQUEST, msg.clone()),
+            AppError::Forbidden(ref msg) => (StatusCode::FORBIDDEN, msg.clone()),
         };
 
         let body = ErrorResponse {

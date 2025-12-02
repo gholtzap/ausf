@@ -46,6 +46,9 @@ ausf/
 - RES* verification logic
 - Authentication context storage and management
 
+### Identity and Security
+- Serving Network Name (SNN) verification
+
 ## NOT IMPLEMENTED FEATURES
 
 ### Nausf_UEAuthentication Endpoints
@@ -63,7 +66,6 @@ ausf/
 
 ### Identity and Security
 - SUPI/SUCI identity handling
-- Serving Network Name (SNN) verification
 - Home network authentication checks
 - PLMN ID validation
 

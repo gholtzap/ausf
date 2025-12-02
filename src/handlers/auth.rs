@@ -8,12 +8,13 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::clients::UdmClient;
-use crate::crypto::{compute_hxres_star, derive_kseaf};
+use crate::crypto::{compute_hxres_star, derive_kseaf, verify_snn_authorization};
 use crate::types::{
     AppError, AuthContextStore, AuthData5G, AuthType, AuthenticationInfo, Av5gAka, ConfirmationData,
     ConfirmationDataResponse, StoredAuthContext, UEAuthenticationCtx, AuthResult,
 };
 use crate::types::udm::{AuthenticationVector, ResynchronizationInfo};
+use std::env;
 
 pub async fn initiate_authentication(
     State(auth_store): State<AuthContextStore>,
@@ -22,6 +23,18 @@ pub async fn initiate_authentication(
     tracing::info!(
         "Received authentication request for UE: {}",
         payload.supi_or_suci
+    );
+
+    let allowed_plmns = env::var("ALLOWED_PLMNS")
+        .ok()
+        .map(|s| s.split(',').map(|p| p.trim().to_string()).collect::<Vec<String>>());
+
+    verify_snn_authorization(&payload.serving_network_name, allowed_plmns.as_ref())
+        .map_err(|e| AppError::Forbidden(format!("SNN verification failed: {}", e)))?;
+
+    tracing::info!(
+        "SNN verification passed for: {}",
+        payload.serving_network_name
     );
 
     let udm_client = UdmClient::new()
