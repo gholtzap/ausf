@@ -57,6 +57,7 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 ### NRF Integration (Nnrf_NFManagement)
 - NFRegister operation (register AUSF with NRF on startup)
 - AUSF profile management (NF instance ID, PLMN, capacity, priority)
+- Heartbeat mechanism (keep-alive with NRF)
 
 ## NOT IMPLEMENTED FEATURES
 
@@ -82,7 +83,6 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - NFUpdate operation (update AUSF profile)
 - NFDeregister operation (deregister AUSF from NRF)
 - NFStatusSubscribe operation (subscribe to NF status changes)
-- Heartbeat mechanism (keep-alive with NRF)
 
 ### NRF Integration (Nnrf_NFDiscovery)
 - NFDiscover operation (discover other NFs like UDM)

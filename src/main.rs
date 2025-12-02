@@ -82,6 +82,37 @@ async fn main() -> anyhow::Result<()> {
         Ok(response) => {
             tracing::info!("Successfully registered with NRF");
             tracing::debug!("Registration response: {:?}", response);
+
+            let heartbeat_timer = response.nf_profile.heart_beat_timer.unwrap_or(60);
+            tracing::info!("Heartbeat timer: {} seconds", heartbeat_timer);
+
+            let nrf_client_clone = Arc::clone(&nrf_client);
+            let nf_id = nf_instance_id;
+            tokio::spawn(async move {
+                let interval_seconds = (heartbeat_timer as f64 * 0.8) as u64;
+                let mut interval = tokio::time::interval(std::time::Duration::from_secs(interval_seconds));
+                interval.tick().await;
+
+                loop {
+                    interval.tick().await;
+                    tracing::debug!("Sending heartbeat to NRF");
+
+                    let update = types::nrf::NFUpdateRequest {
+                        nf_status: None,
+                        capacity: None,
+                        load: None,
+                    };
+
+                    match nrf_client_clone.update_nf(nf_id, update).await {
+                        Ok(_) => {
+                            tracing::debug!("Heartbeat sent successfully");
+                        }
+                        Err(e) => {
+                            tracing::error!("Failed to send heartbeat: {}", e);
+                        }
+                    }
+                }
+            });
         }
         Err(e) => {
             tracing::error!("Failed to register with NRF: {}", e);
