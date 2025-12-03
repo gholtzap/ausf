@@ -85,6 +85,10 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - Client certificate verification for mTLS
 - Configurable TLS certificates and keys
 - Automatic ALPN negotiation (h2, http/1.1)
+- OAuth2 token validation middleware
+- JWT token validation with configurable issuers and audiences
+- Bearer token extraction and verification
+- Support for HS256, HS384, and HS512 algorithms
 
 ### EAP-AKA' Support
 - EAP packet structures (Code, Identifier, Length, Type)
@@ -114,9 +118,6 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - SoR Protection endpoint (Nausf_SoRProtection)
 - UPU Protection endpoint (Nausf_UPUProtection)
 
-### Infrastructure
-- OAuth2 token validation
-
 ### NRF Integration (Nnrf_NFManagement)
 - NFStatusSubscribe operation (subscribe to NF status changes)
 
@@ -142,6 +143,12 @@ Copy `.env.example` to `.env` and configure:
   - TLS_CERT_PATH: Path to TLS certificate file
   - TLS_KEY_PATH: Path to TLS private key file
   - TLS_CLIENT_CA_PATH: Path to client CA certificate for mTLS (optional)
+- OAuth2 configuration (optional):
+  - OAUTH2_ENABLED: Enable/disable OAuth2 token validation (default: false)
+  - OAUTH2_ISSUER: Expected token issuer for validation
+  - OAUTH2_AUDIENCE: Expected token audience for validation
+  - OAUTH2_SECRET: Secret key for HMAC-based JWT validation
+  - OAUTH2_JWKS_URI: JWKS URI for public key retrieval (future use)
 
 ### Building
 

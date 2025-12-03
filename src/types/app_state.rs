@@ -1,6 +1,7 @@
 use crate::clients::nrf::NrfClient;
 use crate::clients::udm::UdmClient;
 use crate::types::auth_store::AuthStore;
+use crate::types::oauth2::OAuth2Config;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -10,4 +11,5 @@ pub struct AppState {
     pub nrf_client: Arc<NrfClient>,
     pub udm_client: Arc<UdmClient>,
     pub nf_instance_id: Uuid,
+    pub oauth2_config: OAuth2Config,
 }

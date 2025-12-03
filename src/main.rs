@@ -1,6 +1,7 @@
 mod clients;
 mod crypto;
 mod handlers;
+mod middleware;
 mod routes;
 mod types;
 
@@ -179,11 +180,26 @@ async fn main() -> anyhow::Result<()> {
     let nrf_client_shutdown = Arc::clone(&nrf_client);
     let shutdown_nf_id = nf_instance_id;
 
+    let oauth2_config = types::oauth2::OAuth2Config::from_env();
+
+    if oauth2_config.enabled {
+        tracing::info!("OAuth2 token validation enabled");
+        if let Some(issuer) = &oauth2_config.issuer {
+            tracing::info!("OAuth2 issuer: {}", issuer);
+        }
+        if let Some(audience) = &oauth2_config.audience {
+            tracing::info!("OAuth2 audience: {}", audience);
+        }
+    } else {
+        tracing::info!("OAuth2 token validation disabled");
+    }
+
     let app_state = AppState {
         auth_store,
         nrf_client,
         udm_client,
         nf_instance_id,
+        oauth2_config,
     };
 
     let app = routes::create_routes(app_state)

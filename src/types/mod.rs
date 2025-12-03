@@ -7,6 +7,7 @@ pub mod error;
 pub mod health;
 pub mod identity;
 pub mod nrf;
+pub mod oauth2;
 pub mod problem_details;
 pub mod storage;
 pub mod tls;
