@@ -331,6 +331,61 @@ pub async fn eap_session(
                         }),
                     )
                 }
+                StateTransition::ToResynchronization => {
+                    let rand = session.rand.clone()
+                        .ok_or_else(|| AppError::InternalError("Missing RAND in session".to_string()))?;
+                    let auts = session.auts.clone()
+                        .ok_or_else(|| AppError::InternalError("Missing AUTS in session".to_string()))?;
+
+                    let resync_info = ResynchronizationInfo {
+                        rand: hex::encode(&rand),
+                        auts: hex::encode(&auts),
+                    };
+
+                    let auth_info_result = app_state.udm_client
+                        .get_authentication_info(
+                            &stored_ctx.supi_or_suci,
+                            &stored_ctx.serving_network_name,
+                            Some(resync_info),
+                        )
+                        .await
+                        .map_err(|e| AppError::InternalError(format!("UDM resynchronization request failed: {}", e)))?;
+
+                    let auth_vector = auth_info_result
+                        .authentication_vector
+                        .ok_or_else(|| AppError::InternalError("No authentication vector received from UDM after resync".to_string()))?;
+
+                    let AuthenticationVector::Av5gAka(av) = auth_vector else {
+                        return Err(AppError::InternalError("Unsupported authentication vector type".to_string()));
+                    };
+
+                    let new_rand = hex::decode(&av.rand)
+                        .map_err(|e| AppError::InternalError(format!("Invalid RAND from UDM: {}", e)))?;
+                    let new_autn = hex::decode(&av.autn)
+                        .map_err(|e| AppError::InternalError(format!("Invalid AUTN from UDM: {}", e)))?;
+                    let new_xres_star = hex::decode(&av.xres_star)
+                        .map_err(|e| AppError::InternalError(format!("Invalid XRES* from UDM: {}", e)))?;
+                    let new_kausf = hex::decode(&av.kausf)
+                        .map_err(|e| AppError::InternalError(format!("Invalid KAUSF from UDM: {}", e)))?;
+
+                    stored_ctx.rand = new_rand.clone();
+                    stored_ctx.xres_star = new_xres_star;
+                    stored_ctx.kausf = new_kausf;
+
+                    let eap_challenge = session.build_challenge_request(new_rand, new_autn)
+                        .map_err(|e| AppError::InternalError(format!("Failed to build challenge after resync: {}", e)))?;
+
+                    session.transition(EapAkaPrimeState::Challenge);
+                    let identifier = session.next_identifier();
+                    EapPacket::new(
+                        EapCode::Request,
+                        identifier,
+                        EapData::Request(EapRequestResponse {
+                            eap_type: EapType::EapAkaPrime,
+                            type_data: eap_challenge.to_bytes(),
+                        }),
+                    )
+                }
                 _ => {
                     return Err(AppError::InternalError("Unexpected state transition".to_string()));
                 }

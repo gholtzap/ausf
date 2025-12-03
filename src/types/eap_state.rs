@@ -28,6 +28,7 @@ pub struct EapAkaPrimeSession {
     pub k_re: Option<Vec<u8>>,
     pub msk: Option<Vec<u8>>,
     pub emsk: Option<Vec<u8>>,
+    pub auts: Option<Vec<u8>>,
     pub network_name: String,
     pub identity: String,
 }
@@ -38,6 +39,7 @@ pub enum StateTransition {
     ToChallenge,
     ToSuccess,
     ToFailure,
+    ToResynchronization,
     Stay,
 }
 
@@ -59,6 +61,7 @@ impl EapAkaPrimeSession {
             k_re: None,
             msk: None,
             emsk: None,
+            auts: None,
             network_name,
             identity,
         }
@@ -108,7 +111,8 @@ impl EapAkaPrimeSession {
                 Ok(StateTransition::ToSuccess)
             }
             (EapAkaPrimeState::Challenge, EapAkaPrimeSubtype::AkaSynchronizationFailure) => {
-                Ok(StateTransition::ToFailure)
+                self.extract_auts(message)?;
+                Ok(StateTransition::ToResynchronization)
             }
             (EapAkaPrimeState::Challenge, EapAkaPrimeSubtype::ClientError) => {
                 Ok(StateTransition::ToFailure)
@@ -166,6 +170,19 @@ impl EapAkaPrimeSession {
         if at_mac.value.len() < 2 {
             return Err("Invalid AT_MAC format".to_string());
         }
+
+        Ok(())
+    }
+
+    fn extract_auts(&mut self, message: &EapAkaPrimeMessage) -> Result<(), String> {
+        let at_auts = message.find_attribute(EapAkaPrimeAttributeType::AtAuts)
+            .ok_or_else(|| "Missing AT_AUTS attribute".to_string())?;
+
+        if at_auts.value.len() < 14 {
+            return Err("Invalid AT_AUTS format".to_string());
+        }
+
+        self.auts = Some(at_auts.value[..14].to_vec());
 
         Ok(())
     }

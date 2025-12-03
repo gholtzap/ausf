@@ -103,11 +103,11 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - EAP-AKA' session management and storage
 - POST /ue-authentications/{authCtxId}/eap-session (EAP session handling)
 - DELETE /ue-authentications/{authCtxId}/eap-session (delete EAP result)
+- EAP-AKA' resynchronization handling (AT_AUTS extraction, UDM resync request, new challenge generation)
 
 ## NOT IMPLEMENTED FEATURES
 
 ### Authentication Logic - EAP-AKA' (Remaining)
-- EAP-AKA' resynchronization handling (AT_AUTS)
 - EAP-AKA' fast re-authentication support
 
 ### Service Endpoints
