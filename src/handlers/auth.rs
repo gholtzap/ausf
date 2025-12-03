@@ -4,6 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+use base64::Engine;
 use std::collections::HashMap;
 use uuid::Uuid;
 
@@ -11,7 +12,8 @@ use crate::crypto::{compute_hxres_star, derive_kseaf, verify_snn_authorization, 
 use crate::types::{
     AppError, AppState, AuthData5G, AuthType, AuthenticationInfo, Av5gAka, ConfirmationData,
     ConfirmationDataResponse, StoredAuthContext, UEAuthenticationCtx, AuthResult, SupiOrSuci,
-    DeregistrationInfo,
+    DeregistrationInfo, EapAkaPrimeSession, EapAkaPrimeState, StateTransition, EapPacket,
+    EapCode, EapData, EapRequestResponse, EapType, EapPayload,
 };
 use crate::types::udm::{AuthenticationVector, ResynchronizationInfo};
 use std::env;
@@ -103,6 +105,7 @@ pub async fn initiate_authentication(
         xres_star: xres_star_bytes,
         kausf: kausf_bytes,
         serving_network_name: payload.serving_network_name.clone(),
+        eap_session: None,
     };
 
     app_state
@@ -248,5 +251,171 @@ pub async fn deregister(
         deleted_count
     );
 
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn eap_session(
+    State(app_state): State<AppState>,
+    Path(auth_ctx_id): Path<String>,
+    Json(payload): Json<EapPayload>,
+) -> Result<Response, AppError> {
+    tracing::info!(
+        "Received EAP session request for authCtxId: {}",
+        auth_ctx_id
+    );
+
+    let mut stored_ctx = app_state
+        .auth_store
+        .get(&auth_ctx_id)
+        .await
+        .map_err(|e| AppError::InternalError(format!("Failed to retrieve auth context: {}", e)))?
+        .ok_or_else(|| AppError::NotFound(format!("Authentication context not found: {}", auth_ctx_id)))?;
+
+    let eap_payload_bytes = base64::engine::general_purpose::STANDARD
+        .decode(&payload.eap_payload)
+        .map_err(|e| AppError::BadRequest(format!("Invalid EAP payload base64: {}", e)))?;
+
+    let eap_packet = EapPacket::from_bytes(&eap_payload_bytes)
+        .map_err(|e| AppError::BadRequest(format!("Invalid EAP packet: {}", e)))?;
+
+    if stored_ctx.eap_session.is_none() {
+        let identity = stored_ctx.supi_or_suci.clone();
+        let network_name = stored_ctx.serving_network_name.clone();
+        stored_ctx.eap_session = Some(EapAkaPrimeSession::new(network_name, identity));
+    }
+
+    let session = stored_ctx.eap_session.as_mut().unwrap();
+
+    let response_packet = match eap_packet.data {
+        EapData::Response(ref req_resp) if req_resp.eap_type == EapType::EapAkaPrime => {
+            let eap_msg = crate::types::EapAkaPrimeMessage::from_bytes(&req_resp.type_data)
+                .map_err(|e| AppError::BadRequest(format!("Invalid EAP-AKA' message: {}", e)))?;
+
+            let transition = session.process_response(&eap_msg)
+                .map_err(|e| AppError::BadRequest(format!("EAP-AKA' processing failed: {}", e)))?;
+
+            match transition {
+                StateTransition::ToSuccess => {
+                    session.transition(EapAkaPrimeState::Success);
+                    EapPacket::new(
+                        EapCode::Success,
+                        session.identifier,
+                        EapData::Success,
+                    )
+                }
+                StateTransition::ToFailure => {
+                    session.transition(EapAkaPrimeState::Failure);
+                    EapPacket::new(
+                        EapCode::Failure,
+                        session.identifier,
+                        EapData::Failure,
+                    )
+                }
+                StateTransition::ToChallenge => {
+                    session.transition(EapAkaPrimeState::Challenge);
+                    let rand = hex::decode(&stored_ctx.rand.clone())
+                        .map_err(|_| AppError::InternalError("Invalid RAND in storage".to_string()))?;
+                    let autn_bytes = session.autn.clone()
+                        .ok_or_else(|| AppError::InternalError("Missing AUTN in session".to_string()))?;
+
+                    let eap_challenge = session.build_challenge_request(rand, autn_bytes)
+                        .map_err(|e| AppError::InternalError(format!("Failed to build challenge: {}", e)))?;
+
+                    let identifier = session.next_identifier();
+                    EapPacket::new(
+                        EapCode::Request,
+                        identifier,
+                        EapData::Request(EapRequestResponse {
+                            eap_type: EapType::EapAkaPrime,
+                            type_data: eap_challenge.to_bytes(),
+                        }),
+                    )
+                }
+                _ => {
+                    return Err(AppError::InternalError("Unexpected state transition".to_string()));
+                }
+            }
+        }
+        EapData::Response(_) => {
+            let identifier = session.next_identifier();
+            let identity_req = session.build_identity_request();
+            session.transition(EapAkaPrimeState::Identity);
+
+            EapPacket::new(
+                EapCode::Request,
+                identifier,
+                EapData::Request(EapRequestResponse {
+                    eap_type: EapType::EapAkaPrime,
+                    type_data: identity_req.to_bytes(),
+                }),
+            )
+        }
+        _ => {
+            return Err(AppError::BadRequest("Invalid EAP packet type".to_string()));
+        }
+    };
+
+    let serving_network_name = stored_ctx.serving_network_name.clone();
+
+    app_state
+        .auth_store
+        .insert(auth_ctx_id.clone(), stored_ctx)
+        .await
+        .map_err(|e| AppError::InternalError(format!("Failed to update auth context: {}", e)))?;
+
+    let response_bytes = response_packet.to_bytes();
+    let response_payload = base64::engine::general_purpose::STANDARD.encode(&response_bytes);
+
+    let auth_ctx = UEAuthenticationCtx {
+        auth_type: AuthType::EapAkaPrime,
+        auth_data_5g: AuthData5G::EapPayload(EapPayload {
+            eap_payload: response_payload,
+        }),
+        _links: Some({
+            let mut links = HashMap::new();
+            links.insert(
+                "eap-session".to_string(),
+                crate::types::LinkValue {
+                    href: format!("/nausf-auth/v1/ue-authentications/{}/eap-session", auth_ctx_id),
+                },
+            );
+            links
+        }),
+        serving_network_name: Some(serving_network_name),
+    };
+
+    Ok((StatusCode::OK, Json(auth_ctx)).into_response())
+}
+
+pub async fn delete_eap_session(
+    State(app_state): State<AppState>,
+    Path(auth_ctx_id): Path<String>,
+) -> Result<StatusCode, AppError> {
+    tracing::info!(
+        "Received delete request for EAP session, authCtxId: {}",
+        auth_ctx_id
+    );
+
+    let exists = app_state
+        .auth_store
+        .get(&auth_ctx_id)
+        .await
+        .map_err(|e| AppError::InternalError(format!("Failed to check auth context: {}", e)))?
+        .is_some();
+
+    if !exists {
+        return Err(AppError::NotFound(format!(
+            "Authentication context not found: {}",
+            auth_ctx_id
+        )));
+    }
+
+    app_state
+        .auth_store
+        .delete(&auth_ctx_id)
+        .await
+        .map_err(|e| AppError::InternalError(format!("Failed to delete auth context: {}", e)))?;
+
+    tracing::info!("Successfully deleted EAP session: {}", auth_ctx_id);
     Ok(StatusCode::NO_CONTENT)
 }

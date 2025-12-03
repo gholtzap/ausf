@@ -1,6 +1,8 @@
 use mongodb::bson::Binary;
 use serde::{Deserialize, Serialize};
 
+use crate::types::eap_state::EapAkaPrimeSession;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StoredAuthContext {
     #[serde(rename = "_id")]
@@ -14,6 +16,8 @@ pub struct StoredAuthContext {
     #[serde(with = "bson_binary")]
     pub kausf: Vec<u8>,
     pub serving_network_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub eap_session: Option<EapAkaPrimeSession>,
 }
 
 mod bson_binary {

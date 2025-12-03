@@ -96,17 +96,17 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - EAP-AKA' master key (MK) derivation
 - EAP-AKA' session keys (K_encr, K_aut, K_re, MSK, EMSK) derivation
 - EAP-AKA' MAC computation for AT_MAC attribute
-
-## NOT IMPLEMENTED FEATURES
-
-### Nausf_UEAuthentication Endpoints
+- EAP-AKA' state machine (IDLE, IDENTITY, CHALLENGE, SUCCESS, FAILURE)
+- EAP-AKA' state transition logic
+- EAP-AKA' authentication vector processing
+- EAP-AKA' AT_AUTN and AT_RES validation
+- EAP-AKA' session management and storage
 - POST /ue-authentications/{authCtxId}/eap-session (EAP session handling)
 - DELETE /ue-authentications/{authCtxId}/eap-session (delete EAP result)
 
+## NOT IMPLEMENTED FEATURES
+
 ### Authentication Logic - EAP-AKA' (Remaining)
-- EAP-AKA' state machine (IDLE, IDENTITY, CHALLENGE, SUCCESS, FAILURE)
-- EAP-AKA' authentication vector processing
-- EAP-AKA' AT_AUTN and AT_RES validation
 - EAP-AKA' resynchronization handling (AT_AUTS)
 - EAP-AKA' fast re-authentication support
 
