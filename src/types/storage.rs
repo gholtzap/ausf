@@ -2,6 +2,7 @@ use mongodb::bson::Binary;
 use serde::{Deserialize, Serialize};
 
 use crate::types::eap_state::EapAkaPrimeSession;
+use crate::types::sor::SorInfo;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StoredAuthContext {
@@ -18,6 +19,17 @@ pub struct StoredAuthContext {
     pub serving_network_name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub eap_session: Option<EapAkaPrimeSession>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct StoredSorContext {
+    #[serde(rename = "_id")]
+    pub supi: String,
+    #[serde(with = "bson_binary")]
+    pub kausf: Vec<u8>,
+    pub counter_sor: u16,
+    pub sor_info: SorInfo,
+    pub created_at: i64,
 }
 
 mod bson_binary {

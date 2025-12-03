@@ -116,12 +116,10 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 ### Nausf_SoRProtection Service
 - SoR data models and types (SorInfo, SorSecurityInfo, SteeringContainer, SteeringInfo, AccessTech)
 - SoR cryptographic functions (SOR-MAC-IAUSF computation, CounterSOR management)
+- SoR endpoint handler (POST /nausf-sorprotection/v1/{supi}/ue-sor)
+- SoR context storage in MongoDB
 
 ## NOT IMPLEMENTED FEATURES
-
-### Nausf_SoRProtection Service
-- SoR endpoint handler (POST /{supi}/ue-sor)
-- SoR context storage in MongoDB
 
 ### Service Endpoints
 - UPU Protection endpoint (Nausf_UPUProtection)

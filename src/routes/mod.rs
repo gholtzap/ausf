@@ -1,5 +1,5 @@
 use axum::{middleware, routing::{delete, get, patch, post, put}, Router};
-use crate::handlers::{admin, auth, health, nrf};
+use crate::handlers::{admin, auth, health, nrf, sor};
 use crate::middleware::oauth2_auth;
 use crate::types::AppState;
 
@@ -9,6 +9,7 @@ pub fn create_routes(app_state: AppState) -> Router {
         .route("/nausf-auth/v1/ue-authentications/deregister", post(auth::deregister))
         .route("/nausf-auth/v1/ue-authentications/:authCtxId/5g-aka-confirmation", put(auth::confirm_5g_aka).delete(auth::delete_5g_aka_confirmation))
         .route("/nausf-auth/v1/ue-authentications/:authCtxId/eap-session", post(auth::eap_session).delete(auth::delete_eap_session))
+        .route("/nausf-sorprotection/v1/:supi/ue-sor", post(sor::ue_sor))
         .route("/admin/nf-profile", patch(admin::update_nf_profile))
         .route_layer(middleware::from_fn_with_state(app_state.clone(), oauth2_auth));
 

@@ -40,6 +40,15 @@ impl AuthStore {
         Ok(())
     }
 
+    pub async fn get_by_supi(
+        &self,
+        supi: &str,
+    ) -> Result<Option<StoredAuthContext>, Box<dyn std::error::Error + Send + Sync>> {
+        let filter = mongodb::bson::doc! { "supi": supi };
+        let result = self.collection.find_one(filter).await?;
+        Ok(result)
+    }
+
     pub async fn delete_by_supi(
         &self,
         supi: &str,
