@@ -119,10 +119,13 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - SoR endpoint handler (POST /nausf-sorprotection/v1/{supi}/ue-sor)
 - SoR context storage in MongoDB
 
-## NOT IMPLEMENTED FEATURES
+### Nausf_UPUProtection Service
+- UPU data models and types (UpuInfo, UpuSecurityInfo, UpuData)
+- UPU cryptographic functions (UPU-MAC-IAUSF computation, CounterUPU management)
+- UPU endpoint handler (POST /nausf-upuprotection/v1/{supi}/ue-upu)
+- UPU context storage in MongoDB
 
-### Service Endpoints
-- UPU Protection endpoint (Nausf_UPUProtection)
+## NOT IMPLEMENTED FEATURES
 
 ### Compliance
 - OpenAPI schema validation

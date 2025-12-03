@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::types::eap_state::EapAkaPrimeSession;
 use crate::types::sor::SorInfo;
+use crate::types::upu::UpuInfo;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct StoredAuthContext {
@@ -29,6 +30,17 @@ pub struct StoredSorContext {
     pub kausf: Vec<u8>,
     pub counter_sor: u16,
     pub sor_info: SorInfo,
+    pub created_at: i64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct StoredUpuContext {
+    #[serde(rename = "_id")]
+    pub supi: String,
+    #[serde(with = "bson_binary")]
+    pub kausf: Vec<u8>,
+    pub counter_upu: u16,
+    pub upu_info: UpuInfo,
     pub created_at: i64,
 }
 

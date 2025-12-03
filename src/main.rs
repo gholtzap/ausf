@@ -25,7 +25,7 @@ use tower::Service;
 use clients::mongodb::MongoClient;
 use clients::nrf::NrfClient;
 use clients::udm::UdmClient;
-use types::{AppState, AuthStore, SorStore};
+use types::{AppState, AuthStore, SorStore, UpuStore};
 use types::nrf::{NFProfile, NFStatus, NFType, PlmnId};
 use types::tls::TlsConfig;
 
@@ -177,6 +177,7 @@ async fn main() -> anyhow::Result<()> {
 
     let auth_store = Arc::new(AuthStore::new(Arc::clone(&mongo_client)));
     let sor_store = Arc::new(SorStore::new(Arc::clone(&mongo_client)));
+    let upu_store = Arc::new(UpuStore::new(Arc::clone(&mongo_client)));
 
     let nrf_client_shutdown = Arc::clone(&nrf_client);
     let shutdown_nf_id = nf_instance_id;
@@ -198,6 +199,7 @@ async fn main() -> anyhow::Result<()> {
     let app_state = AppState {
         auth_store,
         sor_store,
+        upu_store,
         nrf_client,
         udm_client,
         nf_instance_id,

@@ -12,6 +12,8 @@ pub mod problem_details;
 pub mod sor;
 pub mod sor_store;
 pub mod storage;
+pub mod upu;
+pub mod upu_store;
 pub mod tls;
 pub mod udm;
 
@@ -26,3 +28,5 @@ pub use problem_details::*;
 pub use sor::*;
 pub use sor_store::SorStore;
 pub use storage::*;
+pub use upu::*;
+pub use upu_store::UpuStore;
