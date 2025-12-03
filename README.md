@@ -133,14 +133,15 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - Query parameter validation (required parameter checks)
 - Header parameter validation (required parameter checks)
 - Validation error handling (return proper 3GPP problem details on validation failures)
+- Response validation middleware (validate outgoing responses against OpenAPI spec)
+- Response status code validation (check status codes match OpenAPI spec)
+- Response body schema validation (validate response JSON against schemas)
+- Response header validation (check required headers are present)
 
 ## NOT IMPLEMENTED FEATURES
 
 ### Compliance
 - API versioning support
-
-### OpenAPI Schema Validation
-- Response validation (validate outgoing responses against OpenAPI spec)
 
 ## Development
 

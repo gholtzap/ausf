@@ -1,7 +1,7 @@
 use axum::{
     body::Body,
     extract::State,
-    http::{Request, StatusCode, Method},
+    http::{Request, StatusCode, Method, HeaderMap},
     middleware::Next,
     response::Response,
 };
@@ -95,6 +95,147 @@ pub async fn validate_request(
 
     let req = Request::from_parts(parts, Body::from(body_bytes));
     Ok(next.run(req).await)
+}
+
+pub async fn validate_response(
+    State(state): State<AppState>,
+    req: Request<Body>,
+    next: Next,
+) -> Response {
+    let method = req.method().clone();
+    let path = req.uri().path().to_string();
+
+    let response = next.run(req).await;
+
+    let spec = match determine_spec_no_error(&state, &path) {
+        Some(s) => s,
+        None => return response,
+    };
+
+    let (operation, _) = match find_operation(spec, &path, &method) {
+        Some((op, params)) => (op, params),
+        None => return response,
+    };
+
+    let (parts, body) = response.into_parts();
+    let status = parts.status;
+
+    let body_bytes = match axum::body::to_bytes(body, usize::MAX).await {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            tracing::error!("Failed to read response body for validation: {}", e);
+            return Response::from_parts(parts, Body::default());
+        }
+    };
+
+    let body_json: Option<Value> = if !body_bytes.is_empty() {
+        match serde_json::from_slice(&body_bytes) {
+            Ok(json) => Some(json),
+            Err(_) => None,
+        }
+    } else {
+        None
+    };
+
+    validate_response_against_spec(operation, status, &body_json, &parts.headers);
+
+    Response::from_parts(parts, Body::from(body_bytes))
+}
+
+fn determine_spec_no_error<'a>(state: &'a AppState, path: &str) -> Option<&'a OpenAPI> {
+    if path.starts_with("/nausf-auth/") || path.starts_with("/ue-authentications") {
+        Some(&state.openapi_specs.ue_authentication)
+    } else if path.starts_with("/nausf-sorprotection/") {
+        Some(&state.openapi_specs.sor_protection)
+    } else if path.starts_with("/nausf-upuprotection/") {
+        Some(&state.openapi_specs.upu_protection)
+    } else {
+        None
+    }
+}
+
+fn validate_response_against_spec(
+    operation: &Operation,
+    status: StatusCode,
+    body_json: &Option<Value>,
+    headers: &HeaderMap,
+) {
+    let status_str = status.as_u16().to_string();
+    let default_status = "default".to_string();
+
+    let response_spec = operation.responses.responses.get(&openapiv3::StatusCode::Code(status.as_u16()))
+        .or_else(|| operation.responses.responses.get(&openapiv3::StatusCode::Range(status.as_u16() / 100)))
+        .or_else(|| operation.responses.default.as_ref().map(|r| r));
+
+    if response_spec.is_none() {
+        tracing::warn!(
+            "Response status {} not defined in OpenAPI spec for operation",
+            status
+        );
+        return;
+    }
+
+    let response_spec = response_spec.unwrap();
+    let response = match response_spec {
+        ReferenceOr::Reference { .. } => {
+            tracing::debug!("Response is a reference, skipping validation");
+            return;
+        }
+        ReferenceOr::Item(r) => r,
+    };
+
+    if let Some(json) = body_json {
+        if let Some(content) = &response.content.get("application/json") {
+            if let Some(schema_ref) = &content.schema {
+                let schema = match schema_ref {
+                    ReferenceOr::Reference { .. } => {
+                        tracing::debug!("Response schema is a reference, skipping validation");
+                        return;
+                    }
+                    ReferenceOr::Item(s) => s,
+                };
+
+                let schema_json = schema_to_json(&schema.schema_kind);
+
+                match JSONSchema::options().compile(&schema_json) {
+                    Ok(compiled) => {
+                        if let Err(errors) = compiled.validate(json) {
+                            let error_messages: Vec<String> = errors
+                                .map(|e| format!("{} at {}", e, e.instance_path))
+                                .collect();
+                            tracing::warn!(
+                                "Response body validation failed: {}",
+                                error_messages.join(", ")
+                            );
+                        } else {
+                            tracing::debug!("Response body validation passed");
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!("Failed to compile response schema: {}", e);
+                    }
+                }
+            }
+        }
+    }
+
+    if !response.headers.is_empty() {
+        for (header_name, header_spec) in &response.headers {
+            let header_value = headers.get(header_name.as_str());
+
+            let header_def = match header_spec {
+                ReferenceOr::Reference { .. } => continue,
+                ReferenceOr::Item(h) => h,
+            };
+
+            if header_def.required && header_value.is_none() {
+                tracing::warn!(
+                    "Required response header '{}' is missing",
+                    header_name
+                );
+            }
+        }
+    }
 }
 
 fn determine_spec<'a>(state: &'a AppState, path: &str) -> Result<&'a OpenAPI, (StatusCode, axum::Json<ProblemDetails>)> {
