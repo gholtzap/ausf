@@ -32,3 +32,5 @@ rustls-pemfile = "2"
 tokio-stream = { version = "0.1", features = ["net"] }
 jsonwebtoken = "9"
 rand = "0.8"
+serde_yaml = "0.9"
+openapiv3 = "2"

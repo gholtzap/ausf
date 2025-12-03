@@ -2,6 +2,7 @@ mod clients;
 mod crypto;
 mod handlers;
 mod middleware;
+mod openapi;
 mod routes;
 mod types;
 
@@ -39,6 +40,12 @@ async fn main() -> anyhow::Result<()> {
         ))
         .with(tracing_subscriber::fmt::layer())
         .init();
+
+    tracing::info!("Loading OpenAPI specifications");
+    let openapi_specs = Arc::new(
+        openapi::specs::OpenApiSpecs::load()
+            .map_err(|e| anyhow::anyhow!("Failed to load OpenAPI specs: {}", e))?
+    );
 
     let host = std::env::var("SERVER_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let port = std::env::var("SERVER_PORT")
@@ -204,6 +211,7 @@ async fn main() -> anyhow::Result<()> {
         udm_client,
         nf_instance_id,
         oauth2_config,
+        openapi_specs,
     };
 
     let app = routes::create_routes(app_state)

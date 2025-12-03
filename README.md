@@ -125,11 +125,18 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - UPU endpoint handler (POST /nausf-upuprotection/v1/{supi}/ue-upu)
 - UPU context storage in MongoDB
 
+### OpenAPI Schema Validation
+- Load and parse OpenAPI specs from YAML files (3 specs: UEAuthentication, SoRProtection, UPUProtection)
+
 ## NOT IMPLEMENTED FEATURES
 
 ### Compliance
-- OpenAPI schema validation
 - API versioning support
+
+### OpenAPI Schema Validation
+- Request validation middleware (validate incoming request bodies, parameters, headers against OpenAPI spec)
+- Response validation (validate outgoing responses against OpenAPI spec)
+- Validation error handling (return proper 3GPP problem details on validation failures)
 
 ## Development
 
