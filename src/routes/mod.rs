@@ -1,5 +1,5 @@
 use axum::{middleware, routing::{delete, get, patch, post, put}, Router};
-use crate::handlers::{admin, auth, health};
+use crate::handlers::{admin, auth, health, nrf};
 use crate::middleware::oauth2_auth;
 use crate::types::AppState;
 
@@ -15,6 +15,7 @@ pub fn create_routes(app_state: AppState) -> Router {
     Router::new()
         .route("/health", get(health::health_check))
         .route("/status", get(health::status))
+        .route("/nnrf-nfm/v1/nf-status-notify", post(nrf::nf_status_notify))
         .merge(protected_routes)
         .with_state(app_state)
 }

@@ -167,3 +167,72 @@ pub struct SearchResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub num_nf_inst_complete: Option<u32>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum NotificationEventType {
+    NfRegistered,
+    NfDeregistered,
+    NfProfileChanged,
+    NfStatusChanged,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SubscriptionData {
+    pub nf_status_notification_uri: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub req_nf_instance_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subscription_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub validity_time: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub req_notif_events: Option<Vec<NotificationEventType>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nf_type: Option<NFType>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationData {
+    pub event: NotificationEventType,
+    pub nf_instance_uri: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nf_profile: Option<NFProfile>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NFStatusNotify {
+    pub subscription_id: String,
+    pub nf_instance_uri: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nf_profile: Option<NFProfile>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub profile_changes: Option<Vec<ChangeItem>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChangeItem {
+    pub op: ChangeOp,
+    pub path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub from: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub orig_value: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub new_value: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ChangeOp {
+    Add,
+    Remove,
+    Replace,
+    Move,
+    Copy,
+    Test,
+}

@@ -1,4 +1,4 @@
-use crate::types::nrf::{NFProfile, NFRegisterRequest, NFRegisterResponse, NFType, NFUpdateRequest, SearchResult};
+use crate::types::nrf::{NFProfile, NFRegisterRequest, NFRegisterResponse, NFType, NFUpdateRequest, SearchResult, SubscriptionData};
 use reqwest::Client;
 use std::env;
 use uuid::Uuid;
@@ -149,5 +149,81 @@ impl NrfClient {
 
         let search_result = response.json::<SearchResult>().await?;
         Ok(search_result)
+    }
+
+    pub async fn subscribe_nf_status(
+        &self,
+        subscription_data: SubscriptionData,
+    ) -> Result<SubscriptionData, Box<dyn std::error::Error + Send + Sync>> {
+        let url = format!(
+            "{}/nnrf-nfm/v1/subscriptions",
+            self.base_url
+        );
+
+        let response = self.client
+            .post(&url)
+            .json(&subscription_data)
+            .header("Content-Type", "application/json")
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("NRF subscribe failed with status {}: {}", status, error_text).into());
+        }
+
+        let subscription_response = response.json::<SubscriptionData>().await?;
+        Ok(subscription_response)
+    }
+
+    pub async fn update_subscription(
+        &self,
+        subscription_id: &str,
+        subscription_data: SubscriptionData,
+    ) -> Result<SubscriptionData, Box<dyn std::error::Error + Send + Sync>> {
+        let url = format!(
+            "{}/nnrf-nfm/v1/subscriptions/{}",
+            self.base_url, subscription_id
+        );
+
+        let response = self.client
+            .patch(&url)
+            .json(&subscription_data)
+            .header("Content-Type", "application/merge-patch+json")
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("NRF update subscription failed with status {}: {}", status, error_text).into());
+        }
+
+        let subscription_response = response.json::<SubscriptionData>().await?;
+        Ok(subscription_response)
+    }
+
+    pub async fn delete_subscription(
+        &self,
+        subscription_id: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let url = format!(
+            "{}/nnrf-nfm/v1/subscriptions/{}",
+            self.base_url, subscription_id
+        );
+
+        let response = self.client
+            .delete(&url)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("NRF delete subscription failed with status {}: {}", status, error_text).into());
+        }
+
+        Ok(())
     }
 }

@@ -69,6 +69,9 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - NFUpdate operation (update AUSF profile dynamically)
 - NFDeregister operation (graceful deregistration on shutdown)
 - Admin endpoint for manual profile updates (PATCH /admin/nf-profile)
+- NFStatusSubscribe operation (subscribe to NF status changes)
+- NF status notification endpoint (POST /nnrf-nfm/v1/nf-status-notify)
+- Subscription management (create, update, delete)
 
 ### Persistence
 - MongoDB integration for authentication context storage
@@ -115,9 +118,6 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 ### Service Endpoints
 - SoR Protection endpoint (Nausf_SoRProtection)
 - UPU Protection endpoint (Nausf_UPUProtection)
-
-### NRF Integration (Nnrf_NFManagement)
-- NFStatusSubscribe operation (subscribe to NF status changes)
 
 ### Compliance
 - OpenAPI schema validation
