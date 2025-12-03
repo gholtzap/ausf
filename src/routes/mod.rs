@@ -1,6 +1,6 @@
 use axum::{middleware, routing::{delete, get, patch, post, put}, Router};
 use crate::handlers::{admin, auth, health, nrf, sor, upu};
-use crate::middleware::oauth2_auth;
+use crate::middleware::{oauth2_auth, validate_request};
 use crate::types::AppState;
 
 pub fn create_routes(app_state: AppState) -> Router {
@@ -12,6 +12,7 @@ pub fn create_routes(app_state: AppState) -> Router {
         .route("/nausf-sorprotection/v1/:supi/ue-sor", post(sor::ue_sor))
         .route("/nausf-upuprotection/v1/:supi/ue-upu", post(upu::ue_upu))
         .route("/admin/nf-profile", patch(admin::update_nf_profile))
+        .route_layer(middleware::from_fn_with_state(app_state.clone(), validate_request))
         .route_layer(middleware::from_fn_with_state(app_state.clone(), oauth2_auth));
 
     Router::new()

@@ -127,6 +127,12 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 
 ### OpenAPI Schema Validation
 - Load and parse OpenAPI specs from YAML files (3 specs: UEAuthentication, SoRProtection, UPUProtection)
+- Request validation middleware (validate incoming request bodies, parameters, headers against OpenAPI spec)
+- Request body JSON schema validation
+- Path parameter validation (required parameter checks)
+- Query parameter validation (required parameter checks)
+- Header parameter validation (required parameter checks)
+- Validation error handling (return proper 3GPP problem details on validation failures)
 
 ## NOT IMPLEMENTED FEATURES
 
@@ -134,9 +140,7 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - API versioning support
 
 ### OpenAPI Schema Validation
-- Request validation middleware (validate incoming request bodies, parameters, headers against OpenAPI spec)
 - Response validation (validate outgoing responses against OpenAPI spec)
-- Validation error handling (return proper 3GPP problem details on validation failures)
 
 ## Development
 
