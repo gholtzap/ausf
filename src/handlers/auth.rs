@@ -386,6 +386,21 @@ pub async fn eap_session(
                         }),
                     )
                 }
+                StateTransition::ToReauthentication => {
+                    let eap_reauth = session.build_reauthentication_request()
+                        .map_err(|e| AppError::InternalError(format!("Failed to build reauthentication request: {}", e)))?;
+
+                    session.transition(EapAkaPrimeState::Reauthentication);
+                    let identifier = session.next_identifier();
+                    EapPacket::new(
+                        EapCode::Request,
+                        identifier,
+                        EapData::Request(EapRequestResponse {
+                            eap_type: EapType::EapAkaPrime,
+                            type_data: eap_reauth.to_bytes(),
+                        }),
+                    )
+                }
                 _ => {
                     return Err(AppError::InternalError("Unexpected state transition".to_string()));
                 }

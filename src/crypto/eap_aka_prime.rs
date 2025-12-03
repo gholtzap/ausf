@@ -167,6 +167,34 @@ pub fn compute_mac(k_aut: &[u8], message: &[u8]) -> Result<Vec<u8>, String> {
     Ok(mac.finalize().into_bytes()[0..16].to_vec())
 }
 
+pub fn derive_reauth_mk(
+    k_re: &[u8],
+    identity: &[u8],
+    counter: u16,
+    nonce_s: &[u8],
+) -> Result<Vec<u8>, String> {
+    if k_re.len() != 32 {
+        return Err(format!("K_re must be 32 bytes, got {}", k_re.len()));
+    }
+    if nonce_s.len() != 16 {
+        return Err(format!("NONCE_S must be 16 bytes, got {}", nonce_s.len()));
+    }
+
+    let identity_len = (identity.len() as u16).to_be_bytes();
+    let counter_bytes = counter.to_be_bytes();
+
+    let mut s = Vec::new();
+    s.push(0x00);
+    s.extend_from_slice(identity);
+    s.extend_from_slice(&identity_len);
+    s.extend_from_slice(&counter_bytes);
+    s.extend_from_slice(&[0x00, 0x02]);
+    s.extend_from_slice(nonce_s);
+    s.extend_from_slice(&[0x00, 0x10]);
+
+    Ok(kdf(k_re, &s))
+}
+
 fn kdf(key: &[u8], input: &[u8]) -> Vec<u8> {
     let mut mac = HmacSha256::new_from_slice(key).expect("HMAC can take key of any size");
     mac.update(input);
@@ -207,6 +235,31 @@ impl EapAkaPrimeKeys {
             k_encr,
             k_aut,
             k_re,
+            msk,
+            emsk,
+        })
+    }
+
+    pub fn derive_from_reauth(
+        k_re: &[u8],
+        identity: &[u8],
+        counter: u16,
+        nonce_s: &[u8],
+    ) -> Result<Self, String> {
+        let mk = derive_reauth_mk(k_re, identity, counter, nonce_s)?;
+        let k_encr = derive_k_encr(&mk)?;
+        let k_aut = derive_k_aut(&mk)?;
+        let new_k_re = derive_k_re(&mk)?;
+        let msk = derive_msk(&mk)?;
+        let emsk = derive_emsk(&mk)?;
+
+        Ok(Self {
+            ck_prime: vec![],
+            ik_prime: vec![],
+            mk,
+            k_encr,
+            k_aut,
+            k_re: new_k_re,
             msk,
             emsk,
         })

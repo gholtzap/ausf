@@ -7,6 +7,7 @@ pub enum EapAkaPrimeState {
     Idle,
     Identity,
     Challenge,
+    Reauthentication,
     Success,
     Failure,
 }
@@ -31,12 +32,15 @@ pub struct EapAkaPrimeSession {
     pub auts: Option<Vec<u8>>,
     pub network_name: String,
     pub identity: String,
+    pub counter: u16,
+    pub nonce_s: Option<Vec<u8>>,
 }
 
 #[derive(Debug)]
 pub enum StateTransition {
     ToIdentity,
     ToChallenge,
+    ToReauthentication,
     ToSuccess,
     ToFailure,
     ToResynchronization,
@@ -64,6 +68,8 @@ impl EapAkaPrimeSession {
             auts: None,
             network_name,
             identity,
+            counter: 0,
+            nonce_s: None,
         }
     }
 
@@ -119,6 +125,13 @@ impl EapAkaPrimeSession {
             }
             (EapAkaPrimeState::Identity, EapAkaPrimeSubtype::AkaIdentity) => {
                 Ok(StateTransition::Stay)
+            }
+            (EapAkaPrimeState::Reauthentication, EapAkaPrimeSubtype::Reauthentication) => {
+                self.process_reauthentication_response(message)?;
+                Ok(StateTransition::ToSuccess)
+            }
+            (EapAkaPrimeState::Success, EapAkaPrimeSubtype::Reauthentication) => {
+                Ok(StateTransition::ToReauthentication)
             }
             _ => {
                 tracing::warn!(
@@ -251,5 +264,66 @@ impl EapAkaPrimeSession {
             EapAkaPrimeSubtype::AkaAuthenticationReject,
             vec![],
         )
+    }
+
+    pub fn build_reauthentication_request(&mut self) -> Result<EapAkaPrimeMessage, String> {
+        use rand::RngCore;
+
+        self.counter += 1;
+
+        let mut nonce_s = vec![0u8; 16];
+        rand::thread_rng().fill_bytes(&mut nonce_s);
+        self.nonce_s = Some(nonce_s.clone());
+
+        let mut at_counter_value = vec![0, 0];
+        at_counter_value.extend_from_slice(&self.counter.to_be_bytes());
+
+        let mut at_nonce_s_value = vec![0, 0];
+        at_nonce_s_value.extend_from_slice(&nonce_s);
+
+        let mut attributes = vec![
+            EapAkaPrimeAttribute::new(EapAkaPrimeAttributeType::AtCounter, at_counter_value),
+            EapAkaPrimeAttribute::new(EapAkaPrimeAttributeType::AtNonceS, at_nonce_s_value),
+        ];
+
+        let mut at_mac_value = vec![0, 0];
+        at_mac_value.extend_from_slice(&[0u8; 16]);
+        attributes.push(EapAkaPrimeAttribute::new(
+            EapAkaPrimeAttributeType::AtMac,
+            at_mac_value,
+        ));
+
+        Ok(EapAkaPrimeMessage::new(
+            EapAkaPrimeSubtype::Reauthentication,
+            attributes,
+        ))
+    }
+
+    pub fn process_reauthentication_response(&mut self, message: &EapAkaPrimeMessage) -> Result<(), String> {
+        let at_counter = message.find_attribute(EapAkaPrimeAttributeType::AtCounter)
+            .ok_or_else(|| "Missing AT_COUNTER attribute".to_string())?;
+
+        if at_counter.value.len() < 4 {
+            return Err("Invalid AT_COUNTER format".to_string());
+        }
+
+        let counter = u16::from_be_bytes([at_counter.value[2], at_counter.value[3]]);
+
+        if counter != self.counter {
+            return Err("Counter mismatch in reauthentication response".to_string());
+        }
+
+        let at_mac = message.find_attribute(EapAkaPrimeAttributeType::AtMac)
+            .ok_or_else(|| "Missing AT_MAC attribute".to_string())?;
+
+        if at_mac.value.len() < 2 {
+            return Err("Invalid AT_MAC format".to_string());
+        }
+
+        Ok(())
+    }
+
+    pub fn increment_counter(&mut self) {
+        self.counter += 1;
     }
 }

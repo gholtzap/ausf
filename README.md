@@ -108,11 +108,9 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - POST /ue-authentications/{authCtxId}/eap-session (EAP session handling)
 - DELETE /ue-authentications/{authCtxId}/eap-session (delete EAP result)
 - EAP-AKA' resynchronization handling (AT_AUTS extraction, UDM resync request, new challenge generation)
+- EAP-AKA' fast re-authentication support (counter management, nonce handling, re-authentication key derivation, state machine support)
 
 ## NOT IMPLEMENTED FEATURES
-
-### Authentication Logic - EAP-AKA' (Remaining)
-- EAP-AKA' fast re-authentication support
 
 ### Service Endpoints
 - SoR Protection endpoint (Nausf_SoRProtection)
