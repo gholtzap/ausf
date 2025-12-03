@@ -113,10 +113,17 @@ Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
 - EAP-AKA' resynchronization handling (AT_AUTS extraction, UDM resync request, new challenge generation)
 - EAP-AKA' fast re-authentication support (counter management, nonce handling, re-authentication key derivation, state machine support)
 
+### Nausf_SoRProtection Service
+- SoR data models and types (SorInfo, SorSecurityInfo, SteeringContainer, SteeringInfo, AccessTech)
+
 ## NOT IMPLEMENTED FEATURES
 
+### Nausf_SoRProtection Service
+- SoR cryptographic functions (SOR-MAC-IAUSF computation, CounterSOR management)
+- SoR endpoint handler (POST /{supi}/ue-sor)
+- SoR context storage in MongoDB
+
 ### Service Endpoints
-- SoR Protection endpoint (Nausf_SoRProtection)
 - UPU Protection endpoint (Nausf_UPUProtection)
 
 ### Compliance
