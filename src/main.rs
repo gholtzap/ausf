@@ -27,7 +27,7 @@ use clients::mongodb::MongoClient;
 use clients::nrf::NrfClient;
 use clients::udm::UdmClient;
 use types::{AppState, AuthStore, SorStore, UpuStore};
-use types::nrf::{NFProfile, NFStatus, NFType, PlmnId};
+use types::nrf::{NFProfile, NFStatus, NFType, PlmnId, PatchOperation};
 use types::tls::TlsConfig;
 
 #[tokio::main]
@@ -115,7 +115,13 @@ async fn main() -> anyhow::Result<()> {
                     interval.tick().await;
                     tracing::debug!("Sending heartbeat to NRF");
 
-                    let update = vec![];
+                    let update = vec![
+                        PatchOperation {
+                            op: "replace".to_string(),
+                            path: "/nfStatus".to_string(),
+                            value: Some(serde_json::json!("REGISTERED")),
+                        }
+                    ];
 
                     match nrf_client_clone.update_nf(nf_id, update).await {
                         Ok(_) => {
