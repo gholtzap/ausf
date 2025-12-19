@@ -61,7 +61,7 @@ impl NrfClient {
         let response = self.client
             .patch(&url)
             .json(&update)
-            .header("Content-Type", "application/merge-patch+json")
+            .header("Content-Type", "application/json-patch+json")
             .send()
             .await?;
 

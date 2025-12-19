@@ -147,14 +147,14 @@ pub struct NFRegisterResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct NFUpdateRequest {
+pub struct PatchOperation {
+    pub op: String,
+    pub path: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub nf_status: Option<NFStatus>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub capacity: Option<u16>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub load: Option<u8>,
+    pub value: Option<serde_json::Value>,
 }
+
+pub type NFUpdateRequest = Vec<PatchOperation>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

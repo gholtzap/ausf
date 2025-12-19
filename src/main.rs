@@ -115,11 +115,7 @@ async fn main() -> anyhow::Result<()> {
                     interval.tick().await;
                     tracing::debug!("Sending heartbeat to NRF");
 
-                    let update = types::nrf::NFUpdateRequest {
-                        nf_status: None,
-                        capacity: None,
-                        load: None,
-                    };
+                    let update = vec![];
 
                     match nrf_client_clone.update_nf(nf_id, update).await {
                         Ok(_) => {
