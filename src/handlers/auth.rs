@@ -65,6 +65,7 @@ pub async fn initiate_authentication(
         auts: r.auts.clone(),
     });
 
+    tracing::info!("Calling UDM to get authentication info for UE: {}", payload.supi_or_suci);
     let auth_info_result = app_state.udm_client
         .get_authentication_info(
             &payload.supi_or_suci,
@@ -72,26 +73,50 @@ pub async fn initiate_authentication(
             resync_info,
         )
         .await
-        .map_err(|e| AppError::InternalError(format!("UDM request failed: {}", e)))?;
+        .map_err(|e| {
+            tracing::error!("UDM request failed: {}", e);
+            AppError::InternalError(format!("UDM request failed: {}", e))
+        })?;
 
+    tracing::info!("Received authentication info from UDM");
     let auth_vector = auth_info_result
         .authentication_vector
-        .ok_or_else(|| AppError::InternalError("No authentication vector received from UDM".to_string()))?;
+        .ok_or_else(|| {
+            tracing::error!("No authentication vector received from UDM");
+            AppError::InternalError("No authentication vector received from UDM".to_string())
+        })?;
 
+    tracing::info!("Validating authentication vector");
     validate_authentication_vector(&auth_vector)
-        .map_err(|e| AppError::InternalError(format!("Authentication vector validation failed: {}", e)))?;
+        .map_err(|e| {
+            tracing::error!("Authentication vector validation failed: {}", e);
+            AppError::InternalError(format!("Authentication vector validation failed: {}", e))
+        })?;
 
+    tracing::info!("Authentication vector validated successfully");
     let AuthenticationVector::Av5gAka(av) = auth_vector else {
+        tracing::error!("Unsupported authentication vector type");
         return Err(AppError::InternalError("Unsupported authentication vector type".to_string()));
     };
 
+    tracing::info!("Decoding hex values from UDM (RAND, XRES*, KAUSF)");
     let rand_bytes = hex::decode(&av.rand)
-        .map_err(|e| AppError::InternalError(format!("Invalid RAND from UDM: {}", e)))?;
+        .map_err(|e| {
+            tracing::error!("Invalid RAND from UDM: {}", e);
+            AppError::InternalError(format!("Invalid RAND from UDM: {}", e))
+        })?;
     let xres_star_bytes = hex::decode(&av.xres_star)
-        .map_err(|e| AppError::InternalError(format!("Invalid XRES* from UDM: {}", e)))?;
+        .map_err(|e| {
+            tracing::error!("Invalid XRES* from UDM: {}", e);
+            AppError::InternalError(format!("Invalid XRES* from UDM: {}", e))
+        })?;
     let kausf_bytes = hex::decode(&av.kausf)
-        .map_err(|e| AppError::InternalError(format!("Invalid KAUSF from UDM: {}", e)))?;
+        .map_err(|e| {
+            tracing::error!("Invalid KAUSF from UDM: {}", e);
+            AppError::InternalError(format!("Invalid KAUSF from UDM: {}", e))
+        })?;
 
+    tracing::info!("Successfully decoded all hex values");
     let hxres_star = compute_hxres_star(&rand_bytes, &xres_star_bytes);
     let hxres_star_hex = hex::encode(&hxres_star);
 
@@ -108,11 +133,17 @@ pub async fn initiate_authentication(
         eap_session: None,
     };
 
+    tracing::info!("Storing authentication context in MongoDB with ID: {}", auth_ctx_id);
     app_state
         .auth_store
         .insert(auth_ctx_id.clone(), stored_ctx)
         .await
-        .map_err(|e| AppError::InternalError(format!("Failed to store auth context: {}", e)))?;
+        .map_err(|e| {
+            tracing::error!("Failed to store auth context in MongoDB: {}", e);
+            AppError::InternalError(format!("Failed to store auth context: {}", e))
+        })?;
+
+    tracing::info!("Successfully stored authentication context in MongoDB");
 
     let auth_ctx = UEAuthenticationCtx {
         auth_type: AuthType::FiveGAka,
