@@ -69,6 +69,13 @@ impl SupiOrSuci {
             SupiOrSuci::Suci(suci) => suci.to_string(),
         }
     }
+
+    pub fn to_supi(&self) -> Result<Supi, String> {
+        match self {
+            SupiOrSuci::Supi(supi) => Ok(supi.clone()),
+            SupiOrSuci::Suci(suci) => suci.deconceal(),
+        }
+    }
 }
 
 impl Supi {
@@ -194,6 +201,28 @@ impl Suci {
             self.home_network_public_key_id,
             self.scheme_output
         )
+    }
+
+    pub fn deconceal(&self) -> Result<Supi, String> {
+        match self.protection_scheme {
+            ProtectionScheme::NullScheme => {
+                match self.supi_type {
+                    SupiType::Imsi => {
+                        Ok(Supi::Imsi {
+                            mcc: self.mcc.clone(),
+                            mnc: self.mnc.clone(),
+                            msin: self.scheme_output.clone(),
+                        })
+                    }
+                    SupiType::Nai => {
+                        Err("NAI SUCI de-concealment not implemented".to_string())
+                    }
+                }
+            }
+            ProtectionScheme::ProfileA | ProtectionScheme::ProfileB => {
+                Err(format!("De-concealment for {:?} not implemented - requires private key", self.protection_scheme))
+            }
+        }
     }
 }
 

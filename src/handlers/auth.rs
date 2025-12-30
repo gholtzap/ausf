@@ -65,10 +65,14 @@ pub async fn initiate_authentication(
         auts: r.auts.clone(),
     });
 
-    tracing::info!("Calling UDM to get authentication info for UE: {}", payload.supi_or_suci);
+    let supi = identity.to_supi()
+        .map_err(|e| AppError::BadRequest(format!("Failed to de-conceal SUCI: {}", e)))?;
+    let supi_string = supi.to_string();
+
+    tracing::info!("Calling UDM to get authentication info for UE: {} (SUPI: {})", payload.supi_or_suci, supi_string);
     let auth_info_result = app_state.udm_client
         .get_authentication_info(
-            &payload.supi_or_suci,
+            &supi_string,
             &payload.serving_network_name,
             resync_info,
             &app_state.nf_instance_id.to_string(),
@@ -374,9 +378,15 @@ pub async fn eap_session(
                         auts: hex::encode(&auts),
                     };
 
+                    let identity = SupiOrSuci::parse(&stored_ctx.supi_or_suci)
+                        .map_err(|e| AppError::InternalError(format!("Invalid SUPI/SUCI in stored context: {}", e)))?;
+                    let supi = identity.to_supi()
+                        .map_err(|e| AppError::InternalError(format!("Failed to de-conceal SUCI during resync: {}", e)))?;
+                    let supi_string = supi.to_string();
+
                     let auth_info_result = app_state.udm_client
                         .get_authentication_info(
-                            &stored_ctx.supi_or_suci,
+                            &supi_string,
                             &stored_ctx.serving_network_name,
                             Some(resync_info),
                             &app_state.nf_instance_id.to_string(),
