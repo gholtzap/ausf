@@ -154,18 +154,18 @@ impl Suci {
             _ => return Err(format!("Invalid SUPI type: {}", parts[1])),
         };
 
-        let protection_scheme = match parts[4] {
+        let protection_scheme = match parts[5] {
             "0" => ProtectionScheme::NullScheme,
             "1" => ProtectionScheme::ProfileA,
             "2" => ProtectionScheme::ProfileB,
-            _ => return Err(format!("Invalid protection scheme: {}", parts[4])),
+            _ => return Err(format!("Invalid protection scheme: {}", parts[5])),
         };
 
         Ok(Suci {
             supi_type,
             mcc: parts[2].to_string(),
             mnc: parts[3].to_string(),
-            routing_indicator: parts[5].to_string(),
+            routing_indicator: parts[4].to_string(),
             protection_scheme,
             home_network_public_key_id: parts[6].to_string(),
             scheme_output: parts[7].to_string(),
