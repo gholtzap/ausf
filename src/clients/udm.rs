@@ -43,8 +43,11 @@ impl UdmClient {
             ausf_instance_id: Some(ausf_instance_id.to_string()),
         };
 
-        let url = format!("{}/nudm-ueau/v1/suci-{}/security-information/generate-auth-data",
+        let url = format!("{}/nudm-ueau/v1/{}/security-information/generate-auth-data",
             self.base_url, supi_or_suci);
+
+        tracing::debug!("UDM request URL: {}", url);
+        tracing::debug!("UDM request body: supi_or_suci={}", supi_or_suci);
 
         let response = self.client
             .post(&url)
