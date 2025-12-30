@@ -27,7 +27,7 @@ pub struct UEAuthenticationCtx {
     pub auth_type: AuthType,
     #[serde(rename = "5gAuthData")]
     pub auth_data_5g: AuthData5G,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", rename = "_links")]
     pub _links: Option<HashMap<String, LinkValue>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub serving_network_name: Option<String>,
