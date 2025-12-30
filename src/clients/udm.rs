@@ -34,12 +34,13 @@ impl UdmClient {
         supi_or_suci: &str,
         serving_network_name: &str,
         resync_info: Option<ResynchronizationInfo>,
+        ausf_instance_id: &str,
     ) -> Result<AuthenticationInfoResult, Box<dyn std::error::Error>> {
         let request = AuthenticationInfoRequest {
             supi_or_suci: supi_or_suci.to_string(),
             serving_network_name: serving_network_name.to_string(),
             resynchronization_info: resync_info,
-            ausf_instance_id: None,
+            ausf_instance_id: Some(ausf_instance_id.to_string()),
         };
 
         let url = format!("{}/nudm-ueau/v1/suci-{}/security-information/generate-auth-data",

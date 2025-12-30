@@ -71,6 +71,7 @@ pub async fn initiate_authentication(
             &payload.supi_or_suci,
             &payload.serving_network_name,
             resync_info,
+            &app_state.nf_instance_id.to_string(),
         )
         .await
         .map_err(|e| {
@@ -378,6 +379,7 @@ pub async fn eap_session(
                             &stored_ctx.supi_or_suci,
                             &stored_ctx.serving_network_name,
                             Some(resync_info),
+                            &app_state.nf_instance_id.to_string(),
                         )
                         .await
                         .map_err(|e| AppError::InternalError(format!("UDM resynchronization request failed: {}", e)))?;
