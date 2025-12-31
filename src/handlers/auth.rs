@@ -105,6 +105,7 @@ pub async fn initiate_authentication(
     };
 
     tracing::info!("Decoding hex values from UDM (RAND, XRES*, KAUSF)");
+    tracing::info!("UDM response - RAND: {}, AUTN: {}, XRES*: {}", av.rand, av.autn, av.xres_star);
     let rand_bytes = hex::decode(&av.rand)
         .map_err(|e| {
             tracing::error!("Invalid RAND from UDM: {}", e);
@@ -153,9 +154,9 @@ pub async fn initiate_authentication(
     let auth_ctx = UEAuthenticationCtx {
         auth_type: AuthType::FiveGAka,
         auth_data_5g: AuthData5G::Av5gAka(Av5gAka {
-            rand: av.rand,
-            hxres_star: hxres_star_hex,
-            autn: av.autn,
+            rand: av.rand.clone(),
+            hxres_star: hxres_star_hex.clone(),
+            autn: av.autn.clone(),
         }),
         _links: Some({
             let mut links = HashMap::new();
@@ -169,6 +170,8 @@ pub async fn initiate_authentication(
         }),
         serving_network_name: Some(payload.serving_network_name),
     };
+
+    tracing::info!("Sending to AMF - RAND: {}, AUTN: {}, HXRES*: {}", av.rand, av.autn, hxres_star_hex);
 
     let location = format!("/nausf-auth/v1/ue-authentications/{}", auth_ctx_id);
 

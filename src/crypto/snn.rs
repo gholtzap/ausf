@@ -44,12 +44,14 @@ pub fn verify_snn_authorization(
 
     if let Some(allowed) = allowed_plmns {
         if !allowed.is_empty() {
-            let plmn_id = format!("{}{}", mcc, mnc);
+            let mnc_num: u32 = mnc.parse().map_err(|_| "Invalid MNC format".to_string())?;
+            let mnc_normalized = mnc_num.to_string();
+            let plmn_id = format!("{}{}", mcc, mnc_normalized);
 
             if !allowed.iter().any(|allowed_plmn| {
                 let normalized = allowed_plmn.replace("-", "");
                 normalized == plmn_id ||
-                normalized == format!("{}-{}", mcc, mnc)
+                normalized == format!("{}-{}", mcc, mnc_normalized)
             }) {
                 return Err(format!(
                     "Serving network {} (PLMN: {}) is not authorized",
