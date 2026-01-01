@@ -1,18 +1,10 @@
-# 5G AUSF (Authentication Server Function)
+# AUSF
 
-A Rust implementation of the 5G Authentication Server Function based on 3GPP specifications.
+**This repo is not production-ready yet. I am still developing the core features.**
 
-## Overview
+The AUSF (Authentication Server Function) is a core component of the 5G architecture. It is responsible for authentication operations, including UE authentication, Steering of Roaming protection, and UE Parameters Update protection.
 
-The AUSF is a key network function in 5G core networks responsible for authentication operations. This implementation follows the 3GPP TS 29.509 specification.
-
-## Supported Services
-
-Based on the 3GPP OpenAPI specifications in `context/3gpp/`:
-
-- **Nausf_UEAuthentication**: UE authentication service
-- **Nausf_SoRProtection**: Steering of Roaming protection service
-- **Nausf_UPUProtection**: UE Parameters Update protection service
+`ausf-rust` is a Rust implementation of 3GPP's 5G AUSF specification. The specification can be found [here](https://portal.3gpp.org/desktopmodules/Specifications/SpecificationDetails.aspx?specificationId=3350).
 
 ## IMPLEMENTED FEATURES
 
