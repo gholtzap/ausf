@@ -49,17 +49,25 @@ pub fn compute_hxres_star(rand: &[u8], xres_star: &[u8]) -> Vec<u8> {
     hasher.finalize().to_vec()
 }
 
-pub fn derive_kseaf(kausf: &[u8], supi: &str) -> Vec<u8> {
-    let supi_bytes = supi.as_bytes();
-    let supi_len = supi_bytes.len() as u16;
+pub fn derive_kseaf(kausf: &[u8], serving_network_name: &str) -> Vec<u8> {
+    let snn_bytes = serving_network_name.as_bytes();
+    let snn_len = snn_bytes.len() as u16;
 
     let mut s = Vec::new();
     s.push(0x6C);
-    s.extend_from_slice(supi_bytes);
-    s.extend_from_slice(&supi_len.to_be_bytes());
-    s.extend_from_slice(&[0x00, 0x01]);
+    s.extend_from_slice(snn_bytes);
+    s.extend_from_slice(&snn_len.to_be_bytes());
 
-    kdf(kausf, &s)
+    tracing::debug!("derive_kseaf KDF construction:");
+    tracing::debug!("  FC: 0x6C");
+    tracing::debug!("  SNN bytes: {}", hex::encode(snn_bytes));
+    tracing::debug!("  SNN length: {} (0x{:04x})", snn_len, snn_len);
+    tracing::debug!("  Full S ({} bytes): {}", s.len(), hex::encode(&s));
+    tracing::debug!("  KAUSF ({} bytes): {}", kausf.len(), hex::encode(kausf));
+
+    let result = kdf(kausf, &s);
+    tracing::debug!("  Result ({} bytes): {}", result.len(), hex::encode(&result));
+    result
 }
 
 #[cfg(test)]

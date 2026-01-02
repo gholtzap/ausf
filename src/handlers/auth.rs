@@ -218,8 +218,15 @@ pub async fn confirm_5g_aka(
 
     let supi = stored_ctx.supi.or_else(|| Some(stored_ctx.supi_or_suci.clone()));
 
-    let kseaf = derive_kseaf(&stored_ctx.kausf, &supi.clone().unwrap_or_default());
+    tracing::info!("KSEAF Derivation Inputs:");
+    tracing::info!("  KAUSF ({} bytes): {}", stored_ctx.kausf.len(), hex::encode(&stored_ctx.kausf));
+    tracing::info!("  Serving Network Name: '{}'", stored_ctx.serving_network_name);
+    tracing::info!("  SNN bytes ({} bytes): {}", stored_ctx.serving_network_name.len(), hex::encode(stored_ctx.serving_network_name.as_bytes()));
+
+    let kseaf = derive_kseaf(&stored_ctx.kausf, &stored_ctx.serving_network_name);
     let kseaf_hex = hex::encode(kseaf);
+
+    tracing::info!("  KSEAF result ({} bytes): {}", kseaf_hex.len() / 2, kseaf_hex);
 
     app_state
         .auth_store
@@ -227,6 +234,7 @@ pub async fn confirm_5g_aka(
         .await
         .map_err(|e| AppError::InternalError(format!("Failed to delete auth context: {}", e)))?;
 
+    tracing::info!("Derived KSEAF: {}", kseaf_hex);
     tracing::info!("Authentication successful for authCtxId: {}", auth_ctx_id);
 
     Ok(Json(ConfirmationDataResponse {
