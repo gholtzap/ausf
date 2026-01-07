@@ -85,10 +85,6 @@ pub async fn oauth2_auth(
 
     if let Some(issuer) = &state.oauth2_config.issuer {
         validation.set_issuer(&[issuer]);
-    } else {
-        validation.validate_exp = true;
-        validation.validate_nbf = true;
-        validation.insecure_disable_signature_validation();
     }
 
     if let Some(audience) = &state.oauth2_config.audience {
