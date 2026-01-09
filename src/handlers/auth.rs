@@ -105,7 +105,7 @@ pub async fn initiate_authentication(
     };
 
     tracing::info!("Decoding hex values from UDM (RAND, XRES*, KAUSF)");
-    tracing::info!("UDM response - RAND: {}, AUTN: {}, XRES*: {}", av.rand, av.autn, av.xres_star);
+    tracing::debug!("UDM response - RAND: {}, AUTN: {}, XRES*: {}", av.rand, av.autn, av.xres_star);
     let rand_bytes = hex::decode(&av.rand)
         .map_err(|e| {
             tracing::error!("Invalid RAND from UDM: {}", e);
@@ -171,7 +171,7 @@ pub async fn initiate_authentication(
         serving_network_name: Some(payload.serving_network_name),
     };
 
-    tracing::info!("Sending to AMF - RAND: {}, AUTN: {}, HXRES*: {}", av.rand, av.autn, hxres_star_hex);
+    tracing::debug!("Sending to AMF - RAND: {}, AUTN: {}, HXRES*: {}", av.rand, av.autn, hxres_star_hex);
 
     let location = format!("/nausf-auth/v1/ue-authentications/{}", auth_ctx_id);
 
@@ -218,15 +218,15 @@ pub async fn confirm_5g_aka(
 
     let supi = stored_ctx.supi.or_else(|| Some(stored_ctx.supi_or_suci.clone()));
 
-    tracing::info!("KSEAF Derivation Inputs:");
-    tracing::info!("  KAUSF ({} bytes): {}", stored_ctx.kausf.len(), hex::encode(&stored_ctx.kausf));
-    tracing::info!("  Serving Network Name: '{}'", stored_ctx.serving_network_name);
-    tracing::info!("  SNN bytes ({} bytes): {}", stored_ctx.serving_network_name.len(), hex::encode(stored_ctx.serving_network_name.as_bytes()));
+    tracing::debug!("KSEAF Derivation Inputs:");
+    tracing::debug!("  KAUSF ({} bytes): {}", stored_ctx.kausf.len(), hex::encode(&stored_ctx.kausf));
+    tracing::debug!("  Serving Network Name: '{}'", stored_ctx.serving_network_name);
+    tracing::debug!("  SNN bytes ({} bytes): {}", stored_ctx.serving_network_name.len(), hex::encode(stored_ctx.serving_network_name.as_bytes()));
 
     let kseaf = derive_kseaf(&stored_ctx.kausf, &stored_ctx.serving_network_name);
     let kseaf_hex = hex::encode(kseaf);
 
-    tracing::info!("  KSEAF result ({} bytes): {}", kseaf_hex.len() / 2, kseaf_hex);
+    tracing::debug!("  KSEAF result ({} bytes): {}", kseaf_hex.len() / 2, kseaf_hex);
 
     app_state
         .auth_store
@@ -234,7 +234,7 @@ pub async fn confirm_5g_aka(
         .await
         .map_err(|e| AppError::InternalError(format!("Failed to delete auth context: {}", e)))?;
 
-    tracing::info!("Derived KSEAF: {}", kseaf_hex);
+    tracing::debug!("Derived KSEAF: {}", kseaf_hex);
     tracing::info!("Authentication successful for authCtxId: {}", auth_ctx_id);
 
     Ok(Json(ConfirmationDataResponse {

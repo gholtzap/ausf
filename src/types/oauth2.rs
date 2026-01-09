@@ -6,6 +6,7 @@ pub struct OAuth2Config {
     pub issuer: Option<String>,
     pub audience: Option<String>,
     pub jwks_uri: Option<String>,
+    pub secret: String,
 }
 
 impl OAuth2Config {
@@ -15,11 +16,19 @@ impl OAuth2Config {
             .parse()
             .unwrap_or(false);
 
+        let secret = if enabled {
+            std::env::var("OAUTH2_SECRET")
+                .expect("OAUTH2_SECRET must be set when OAUTH2_ENABLED=true")
+        } else {
+            String::new()
+        };
+
         Self {
             enabled,
             issuer: std::env::var("OAUTH2_ISSUER").ok(),
             audience: std::env::var("OAUTH2_AUDIENCE").ok(),
             jwks_uri: std::env::var("OAUTH2_JWKS_URI").ok(),
+            secret,
         }
     }
 }

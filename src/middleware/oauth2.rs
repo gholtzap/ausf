@@ -59,10 +59,9 @@ pub async fn oauth2_auth(
 
     let alg = header.alg;
 
-    let secret = std::env::var("OAUTH2_SECRET").unwrap_or_else(|_| "secret".to_string());
     let decoding_key = match alg {
         Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
-            DecodingKey::from_secret(secret.as_bytes())
+            DecodingKey::from_secret(state.oauth2_config.secret.as_bytes())
         }
         _ => {
             return Err((
