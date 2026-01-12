@@ -23,21 +23,50 @@ pub async fn initiate_authentication(
     Json(payload): Json<AuthenticationInfo>,
 ) -> Result<Response, AppError> {
     tracing::info!(
-        "Received authentication request for UE: {}",
-        payload.supi_or_suci
+        event = "auth_initiation_request",
+        supi_or_suci = %payload.supi_or_suci,
+        serving_network = %payload.serving_network_name,
+        "Received authentication request"
     );
 
     let identity = SupiOrSuci::parse(&payload.supi_or_suci)
-        .map_err(|e| AppError::BadRequest(format!("Invalid SUPI/SUCI format: {}", e)))?;
+        .map_err(|e| {
+            tracing::warn!(
+                event = "auth_initiation_failed",
+                supi_or_suci = %payload.supi_or_suci,
+                reason = "invalid_format",
+                error = %e,
+                "Authentication initiation failed: Invalid SUPI/SUCI format"
+            );
+            AppError::BadRequest(format!("Invalid SUPI/SUCI format: {}", e))
+        })?;
 
     if let Some(plmn) = identity.extract_plmn() {
         plmn.validate()
-            .map_err(|e| AppError::BadRequest(format!("Invalid PLMN: {}", e)))?;
+            .map_err(|e| {
+                tracing::warn!(
+                    event = "auth_initiation_failed",
+                    supi_or_suci = %payload.supi_or_suci,
+                    reason = "invalid_plmn",
+                    error = %e,
+                    "Authentication initiation failed: Invalid PLMN"
+                );
+                AppError::BadRequest(format!("Invalid PLMN: {}", e))
+            })?;
         tracing::info!("Extracted and validated PLMN: {}", plmn.to_string());
     }
 
     let network_location = check_home_network(&identity)
-        .map_err(|e| AppError::InternalError(format!("Home network check failed: {}", e)))?;
+        .map_err(|e| {
+            tracing::warn!(
+                event = "auth_initiation_failed",
+                supi_or_suci = %payload.supi_or_suci,
+                reason = "home_network_check_failed",
+                error = %e,
+                "Authentication initiation failed: Home network check failed"
+            );
+            AppError::InternalError(format!("Home network check failed: {}", e))
+        })?;
 
     match network_location {
         NetworkLocation::Home => {
@@ -53,7 +82,17 @@ pub async fn initiate_authentication(
         .map(|s| s.split(',').map(|p| p.trim().to_string()).collect::<Vec<String>>());
 
     verify_snn_authorization(&payload.serving_network_name, allowed_plmns.as_ref())
-        .map_err(|e| AppError::Forbidden(format!("SNN verification failed: {}", e)))?;
+        .map_err(|e| {
+            tracing::warn!(
+                event = "auth_initiation_failed",
+                supi_or_suci = %payload.supi_or_suci,
+                serving_network = %payload.serving_network_name,
+                reason = "snn_verification_failed",
+                error = %e,
+                "Authentication initiation failed: Serving network not authorized"
+            );
+            AppError::Forbidden(format!("SNN verification failed: {}", e))
+        })?;
 
     tracing::info!(
         "SNN verification passed for: {}",
@@ -79,7 +118,14 @@ pub async fn initiate_authentication(
         )
         .await
         .map_err(|e| {
-            tracing::error!("UDM request failed: {}", e);
+            tracing::error!(
+                event = "auth_initiation_failed",
+                supi = %supi_string,
+                serving_network = %payload.serving_network_name,
+                reason = "udm_request_failed",
+                error = %e,
+                "Authentication initiation failed: UDM request failed"
+            );
             AppError::InternalError(format!("UDM request failed: {}", e))
         })?;
 
@@ -145,11 +191,24 @@ pub async fn initiate_authentication(
         .insert(auth_ctx_id.clone(), stored_ctx)
         .await
         .map_err(|e| {
-            tracing::error!("Failed to store auth context in MongoDB: {}", e);
+            tracing::error!(
+                event = "auth_initiation_failed",
+                supi = %supi_string,
+                auth_ctx_id = %auth_ctx_id,
+                reason = "context_storage_failed",
+                error = %e,
+                "Authentication initiation failed: Failed to store context"
+            );
             AppError::InternalError(format!("Failed to store auth context: {}", e))
         })?;
 
-    tracing::info!("Successfully stored authentication context in MongoDB");
+    tracing::info!(
+        event = "auth_initiation_success",
+        supi = %supi_string,
+        auth_ctx_id = %auth_ctx_id,
+        serving_network = %payload.serving_network_name,
+        "Authentication context stored successfully"
+    );
 
     let auth_ctx = UEAuthenticationCtx {
         auth_type: AuthType::FiveGAka,
@@ -189,16 +248,34 @@ pub async fn confirm_5g_aka(
     Json(payload): Json<ConfirmationData>,
 ) -> Result<Json<ConfirmationDataResponse>, AppError> {
     tracing::info!(
-        "Received 5G AKA confirmation for authCtxId: {}",
-        auth_ctx_id
+        event = "auth_confirmation_request",
+        auth_ctx_id = %auth_ctx_id,
+        "Received 5G AKA confirmation request"
     );
 
     let stored_ctx = app_state
         .auth_store
         .get(&auth_ctx_id)
         .await
-        .map_err(|e| AppError::InternalError(format!("Failed to retrieve auth context: {}", e)))?
-        .ok_or_else(|| AppError::NotFound(format!("Authentication context not found: {}", auth_ctx_id)))?;
+        .map_err(|e| {
+            tracing::error!(
+                event = "auth_confirmation_failed",
+                auth_ctx_id = %auth_ctx_id,
+                reason = "context_retrieval_failed",
+                error = %e,
+                "Authentication confirmation failed: Context retrieval error"
+            );
+            AppError::InternalError(format!("Failed to retrieve auth context: {}", e))
+        })?
+        .ok_or_else(|| {
+            tracing::warn!(
+                event = "auth_confirmation_failed",
+                auth_ctx_id = %auth_ctx_id,
+                reason = "context_not_found",
+                "Authentication confirmation failed: Context not found"
+            );
+            AppError::NotFound(format!("Authentication context not found: {}", auth_ctx_id))
+        })?;
 
     let res_star_bytes = hex::decode(&payload.res_star)
         .map_err(|e| AppError::BadRequest(format!("Invalid RES* format: {}", e)))?;
@@ -208,7 +285,13 @@ pub async fn confirm_5g_aka(
     let expected_hxres_star = compute_hxres_star(&stored_ctx.rand, &stored_ctx.xres_star);
 
     if hres_star != expected_hxres_star {
-        tracing::warn!("RES* verification failed for authCtxId: {}", auth_ctx_id);
+        tracing::warn!(
+            event = "auth_confirmation_failed",
+            auth_ctx_id = %auth_ctx_id,
+            supi = stored_ctx.supi.as_ref().unwrap_or(&stored_ctx.supi_or_suci),
+            reason = "res_star_mismatch",
+            "Authentication confirmation failed: RES* verification failed"
+        );
         return Ok(Json(ConfirmationDataResponse {
             auth_result: AuthResult::Failure,
             supi: None,
@@ -235,7 +318,12 @@ pub async fn confirm_5g_aka(
         .map_err(|e| AppError::InternalError(format!("Failed to delete auth context: {}", e)))?;
 
     tracing::debug!("Derived KSEAF: {}", kseaf_hex);
-    tracing::info!("Authentication successful for authCtxId: {}", auth_ctx_id);
+    tracing::info!(
+        event = "auth_confirmation_success",
+        auth_ctx_id = %auth_ctx_id,
+        supi = supi.as_ref().unwrap_or(&"unknown".to_string()),
+        "Authentication confirmed successfully"
+    );
 
     Ok(Json(ConfirmationDataResponse {
         auth_result: AuthResult::Success,
@@ -282,20 +370,30 @@ pub async fn deregister(
     Json(payload): Json<DeregistrationInfo>,
 ) -> Result<StatusCode, AppError> {
     tracing::info!(
-        "Received deregistration request for SUPI: {}",
-        payload.supi
+        event = "deregistration_request",
+        supi = %payload.supi,
+        "Received deregistration request"
     );
 
     let deleted_count = app_state
         .auth_store
         .delete_by_supi(&payload.supi)
         .await
-        .map_err(|e| AppError::InternalError(format!("Failed to delete auth contexts by SUPI: {}", e)))?;
+        .map_err(|e| {
+            tracing::error!(
+                event = "deregistration_failed",
+                supi = %payload.supi,
+                error = %e,
+                "Deregistration failed: Failed to delete auth contexts"
+            );
+            AppError::InternalError(format!("Failed to delete auth contexts by SUPI: {}", e))
+        })?;
 
     tracing::info!(
-        "Successfully deregistered SUPI: {}, deleted {} authentication context(s)",
-        payload.supi,
-        deleted_count
+        event = "deregistration_success",
+        supi = %payload.supi,
+        contexts_deleted = deleted_count,
+        "Deregistration completed successfully"
     );
 
     Ok(StatusCode::NO_CONTENT)
