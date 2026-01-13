@@ -1,6 +1,6 @@
 use axum::{middleware, routing::{delete, get, patch, post, put}, Router};
 use crate::handlers::{admin, auth, health, nrf, sor, upu};
-use crate::middleware::{oauth2_auth, validate_request, validate_response};
+use crate::middleware::{oauth2_auth, rate_limit_auth, validate_request, validate_response};
 use crate::types::AppState;
 
 pub fn create_routes(app_state: AppState) -> Router {
@@ -14,7 +14,8 @@ pub fn create_routes(app_state: AppState) -> Router {
         .route("/admin/nf-profile", patch(admin::update_nf_profile))
         .route_layer(middleware::from_fn_with_state(app_state.clone(), validate_response))
         .route_layer(middleware::from_fn_with_state(app_state.clone(), validate_request))
-        .route_layer(middleware::from_fn_with_state(app_state.clone(), oauth2_auth));
+        .route_layer(middleware::from_fn_with_state(app_state.clone(), oauth2_auth))
+        .route_layer(middleware::from_fn_with_state(app_state.rate_limit_state.clone(), rate_limit_auth));
 
     Router::new()
         .route("/health", get(health::health_check))

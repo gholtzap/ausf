@@ -1,5 +1,6 @@
 use crate::clients::nrf::NrfClient;
 use crate::clients::udm::UdmClient;
+use crate::middleware::RateLimitState;
 use crate::openapi::specs::OpenApiSpecs;
 use crate::types::auth_store::AuthStore;
 use crate::types::sor_store::SorStore;
@@ -18,4 +19,5 @@ pub struct AppState {
     pub nf_instance_id: Uuid,
     pub oauth2_config: OAuth2Config,
     pub openapi_specs: Arc<OpenApiSpecs>,
+    pub rate_limit_state: RateLimitState,
 }

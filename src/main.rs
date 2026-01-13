@@ -26,6 +26,7 @@ use tower::Service;
 use clients::mongodb::MongoClient;
 use clients::nrf::NrfClient;
 use clients::udm::UdmClient;
+use middleware::{RateLimitState, spawn_cleanup_task};
 use types::{AppState, AuthStore, SorStore, UpuStore};
 use types::nrf::{NFProfile, NFStatus, NFType, PlmnId, PatchOperation};
 use types::tls::TlsConfig;
@@ -205,6 +206,10 @@ async fn main() -> anyhow::Result<()> {
         tracing::info!("OAuth2 token validation disabled");
     }
 
+    let rate_limit_state = RateLimitState::new();
+    spawn_cleanup_task(rate_limit_state.clone());
+    tracing::info!("Rate limiting enabled for authentication endpoints");
+
     let app_state = AppState {
         auth_store,
         sor_store,
@@ -214,6 +219,7 @@ async fn main() -> anyhow::Result<()> {
         nf_instance_id,
         oauth2_config,
         openapi_specs,
+        rate_limit_state,
     };
 
     let app = routes::create_routes(app_state)
@@ -241,7 +247,7 @@ async fn main() -> anyhow::Result<()> {
 
         let tls_acceptor = TlsAcceptor::from(rustls_config);
         let mut tcp_stream = TcpListenerStream::new(listener);
-        let make_service = app.into_make_service();
+        let make_service = app.into_make_service_with_connect_info::<SocketAddr>();
 
         loop {
             tokio::select! {
@@ -259,7 +265,10 @@ async fn main() -> anyhow::Result<()> {
 
                     let tls_acceptor = tls_acceptor.clone();
                     let mut make_service = make_service.clone();
-                    let remote_addr = stream.peer_addr().ok();
+                    let remote_addr = match stream.peer_addr() {
+                        Ok(addr) => addr,
+                        Err(_) => continue,
+                    };
 
                     tokio::spawn(async move {
                         let tls_stream = match tls_acceptor.accept(stream).await {
@@ -270,7 +279,7 @@ async fn main() -> anyhow::Result<()> {
                             }
                         };
 
-                        let tower_service = match make_service.call(remote_addr.as_ref()).await {
+                        let tower_service = match make_service.call(remote_addr).await {
                             Ok(s) => s,
                             Err(_) => return,
                         };
@@ -302,7 +311,7 @@ async fn main() -> anyhow::Result<()> {
         tokio::select! {
             result = axum::serve(
                 listener,
-                app.into_make_service()
+                app.into_make_service_with_connect_info::<SocketAddr>()
             ).with_graceful_shutdown(async move {
                 shutdown_signal().await;
                 tracing::info!("Shutdown signal received, deregistering from NRF...");
